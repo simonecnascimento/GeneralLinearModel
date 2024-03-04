@@ -7,7 +7,7 @@
 clear all;
 clc;
 
-spreadsheetPath = 'R:\Levy Lab\2photon\ImagingDatasets_Simone_240116.xlsx';
+spreadsheetPath = 'R:\Levy Lab\2photon\ImagingDatasets_Simone.xlsx';
 sheet = 'Macrophage';
 dataTable = readcell(spreadsheetPath, 'sheet',sheet);  
 colNames = dataTable(1,:); %remove all info and leave just column names
@@ -24,7 +24,7 @@ dataCol = struct( ...
 dataTable(:,dataCol.date) = cellfun(@num2str, dataTable(:,dataCol.date), 'UniformOutput',false); 
 
 % --- Specify the row number of interest
-rowOfInterest = 276; 
+rowOfInterest = 15; 
 
 % Extract information from the specified row
 mouse = dataTable{rowOfInterest, dataCol.mouse};

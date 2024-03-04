@@ -115,12 +115,12 @@ for x = xPresent % x3D %
     % Define locomotion predictors
     tempVelocityCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).Vdown), locoFluor_opts{x}.binSize );
     tempAccelCat = BinDownMean( abs(vertcat(loco{x}(expt{x}.preRuns).Adown)), locoFluor_opts{x}.binSize ); 
-    %tempStateCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).stateDown), locoFluor_opts{x}.binSize );
+    tempStateCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).stateDown), locoFluor_opts{x}.binSize );
 
     % remove 1st and last frame to match projection 
     tempVelocityCat = tempVelocityCat(2:end-1); 
     tempAccelCat = tempAccelCat(2:end-1);
-    %tempStateCat = tempStateCat(2:end-1);
+    tempStateCat = tempStateCat(2:end-1);
 
     %adjust frames based on Substack used
     if expt{x}.Nruns > 1
@@ -128,21 +128,21 @@ for x = xPresent % x3D %
         %adjust frames based on Substack used
         tempVelocityCat = tempVelocityCat(substack); 
         tempAccelCat = tempAccelCat(substack);
-        %tempStateCat = tempStateCat(substack);
+        tempStateCat = tempStateCat(substack);
     end
  
     locoFluor_pred{x} = struct('data',[], 'name',[], 'N',NaN, 'TB',[], 'lopo',[], 'fam',[]); 
     locoFluor_pred{x}.data = [tempVelocityCat, tempAccelCat]; %  tempStateCat
-    locoFluor_pred{x}.name = {'Velocity', '|Accel|'}; %'State'
+    locoFluor_pred{x}.name = {'Velocity', '|Accel|', 'State'}; %'State'
     locoFluor_pred{x}.N = size(locoFluor_pred{x}.data,2);
     for p = flip(1:locoFluor_pred{x}.N) 
         locoFluor_pred{x}.lopo.name{p} = ['No ',locoFluor_pred{x}.name{p}]; 
     end
     
     % Set up leave-one-family-out
-    locoFluor_pred{x}.fam.col = {}; %{1:4, 5:7}; %{1:2, 3:4, 5:6, 7:8, 9:10, 11:12};  % {1:12};%{1, 2:3, 4:5, 6:7, 8, 9}; 
+    locoFluor_pred{x}.fam.col = {1:2, 3}; %{1:4, 5:7}; %{1:2, 3:4, 5:6, 7:8, 9:10, 11:12};  % {1:12};%{1, 2:3, 4:5, 6:7, 8, 9}; 
     locoFluor_pred{x}.fam.N = numel(locoFluor_pred{x}.fam.col); 
-    locoFluor_pred{x}.fam.name = {}; 
+    locoFluor_pred{x}.fam.name = {'Kinematics','Loco'}; 
 
     % Define response
     % Get/Load fluorescence data

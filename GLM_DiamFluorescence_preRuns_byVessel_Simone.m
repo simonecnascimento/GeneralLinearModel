@@ -1,4 +1,4 @@
-%% Use GLM to assess contribution of different variables
+%% SCN - Use GLM to assess contribution of different variables
 
 % Clear any previous variables in the Workspace and Command Window to start fresh
 clear; clc; close all;
@@ -44,6 +44,7 @@ mkdir( figDir );
 
 % Set GLM rate
 GLMrate = 1; %15.49/16 for 3D data %projParam.rate_target = 1 for 2D data
+
 %% 
 for x = xPresent % x3D % 
 
@@ -94,7 +95,7 @@ for x = xPresent % x3D %
     % PREDICTORS
     % Define vascular diameter data 
 
-    %define number of frames preCSD and postCSD
+    % define number of frames preCSD and postCSD
     totalRuns = expt{x}.Nruns;
     totalFrames = numel(vesselROI{x}{1,1}(1).diameter.um_lp);
     if numel(expt{x}.preRuns) == 1
@@ -108,76 +109,136 @@ for x = xPresent % x3D %
     allDiamZ = zscore(allDiam, [], 1);
 
     if ~isnan(expt{x}.csd)
+        %preRuns
         allDiam_preRuns = allDiam(1:preRunsFrames,:);
         allDiamZ_preRuns = zscore(allDiam_preRuns, [], 1);
+        %postRuns
         allDiam_postRuns = allDiam(preRunsFrames+1:totalFrames,:);
         allDiamZ_postRuns = zscore(allDiam_postRuns, [], 1);
     end
 
     diamFluor_pred{x} = struct('data',[], 'name',[], 'N',NaN, 'TB',[], 'lopo',[], 'fam',[]); 
-    diamFluor_pred{x}.data = allDiam_preRuns; % accelData, stateData, allDiam
-    diamFluor_pred{x}.name = sprintfc('Diam %i', 1:size(allDiam,2)); %  '|Accel|', 'State'
-    diamFluor_pred{x}.N = size(diamFluor_pred{x}.data,2);
-    for p = flip(1:diamFluor_pred{x}.N)
-        diamFluor_pred{x}.lopo.name{p} = ['No ',diamFluor_pred{x}.name{p}]; 
-    end
 
-    % Set up leave-one-family-out
-    firstDiamInd = find(contains(diamFluor_pred{x}.name, 'Diam'), 1);
-    diamFluor_pred{x}.fam.col = {}; %1:firstDiamInd-1, firstDiamInd:diamFluor_pred{x}.N}; %{1:4, 5:7}; %{1:2, 3:4, 5:6, 7:8, 9:10, 11:12};  % {1:12};%{1, 2:3, 4:5, 6:7, 8, 9}; 
-    diamFluor_pred{x}.fam.N = numel(diamFluor_pred{x}.fam.col); 
-    diamFluor_pred{x}.fam.name = {}; 
+    % allDiam
+    diamFluor_summary_deviances = [];
+    diamFluor_summary_peakCoefficients = [];
+    diamFluor_summary_peakLags = [];
 
-    % Define response
+    % allDiamZ (Z-score)
+    diamZFluor_summary_deviances = [];
+    diamZFluor_summary_peakCoefficients = [];
+    diamZFluor_summary_peakLags = [];
 
-    % Get/Load fluorescence data
-    aquaPath = sprintf('%sAQuA2\\1Hz', expt{x}.dir);
-    files_aqua = dir(aquaPath);
-
-    % Exclude '.', '..', and 'Thumbs.db' entries, so 'contents' contains only the actual files and folders in the directory
-    excludeList = {'.', '..', 'Thumbs.db'};
-    files_aqua = files_aqua(~ismember({files_aqua.name}, excludeList));
-    for f = 1:numel(files_aqua)
-        if contains(files_aqua(f).name, 'analysis') 
-            fileName = files_aqua(f).name;
-            load(sprintf('%s\\%s', aquaPath, fileName));
+    for vessel = 1:numel(diamPool)
+        diamFluor_pred{x}.data = allDiamZ_preRuns(:,vessel); % accelData, stateData, allDiam
+        diamFluor_pred{x}.name = sprintfc('Diam %i', 1:size(allDiam,2)); % 1:size(allDiam,2); '|Accel|', 'State'
+        diamFluor_pred{x}.N = size(diamFluor_pred{x}.data,2);
+        for p = flip(1:diamFluor_pred{x}.N)
+            diamFluor_pred{x}.lopo.name{p} = ['No ',diamFluor_pred{x}.name{p}]; 
         end
+    
+        % Set up leave-one-family-out
+        firstDiamInd = find(contains(diamFluor_pred{x}.name, 'Diam'), 1);
+        diamFluor_pred{x}.fam.col = {}; %1:firstDiamInd-1, firstDiamInd:diamFluor_pred{x}.N}; %{1:4, 5:7}; %{1:2, 3:4, 5:6, 7:8, 9:10, 11:12};  % {1:12};%{1, 2:3, 4:5, 6:7, 8, 9}; 
+        diamFluor_pred{x}.fam.N = numel(diamFluor_pred{x}.fam.col); 
+        diamFluor_pred{x}.fam.name = {}; 
+    
+        % Define response
+
+        % Get/Load fluorescence data
+        aquaPath = sprintf('%sAQuA2\\1Hz', expt{x}.dir);
+        files_aqua = dir(aquaPath);
+
+        % Exclude '.', '..', and 'Thumbs.db' entries, so 'contents' contains only the actual files and folders in the directory
+        excludeList = {'.', '..', 'Thumbs.db'};
+        files_aqua = files_aqua(~ismember({files_aqua.name}, excludeList));
+        for f = 1:numel(files_aqua)
+            if contains(files_aqua(f).name, 'analysis') 
+                fileName = files_aqua(f).name;
+                load(sprintf('%s\\%s', aquaPath, fileName));
+            end
+        end
+       
+        x=xPresent;  %reset experiment row value because AQuA analysis code also had x as variable
+    
+        cellFluorPool = [resultsFinal.dFF];
+        fluorResp = cat(1, cellFluorPool{:})';
+        fluorRespZ = zscore(fluorResp, [], 1);
+    
+        if ~isnan(expt{x}.csd)
+            fluorResp_preRuns = fluorResp(1:preRunsFrames,:);
+            fluorRespZ_preRuns = zscore(fluorResp_preRuns, [], 1);
+            fluorResp_postRuns = fluorResp(preRunsFrames+1:totalFrames,:);
+            fluorRespZ_postRuns = zscore(fluorResp_postRuns, [], 1);
+        end
+    
+        diamFluor_resp{x}.data = fluorRespZ_preRuns;
+        diamFluor_resp{x}.N = size(diamFluor_resp{x}.data, 2); 
+    
+        %extract Cell ID from resultsFinal
+        fluorIDs = table2cell(resultsFinal(:,1))';
+        diamFluor_resp{x}.name = fluorIDs;
+    
+        % Remove scans with missing data 
+        nanFrame = find(any(isnan([diamFluor_pred{x}.data, diamFluor_resp{x}.data]),2)); % find( isnan(sum(pred(x).data,2)) ); 
+        fprintf('\nRemoving %i NaN-containing frames', numel(nanFrame));
+        diamFluor_pred{x}.data(nanFrame,:) = []; 
+        diamFluor_resp{x}.data(nanFrame,:) = [];
+    
+        % GLM name update by vessel
+        GLMname_vessel = sprintf('GLM_diamFluor_preRuns_vessel_%i', vessel);
+        diamFluor_opts{x}.name = sprintf('%s_%s', fileTemp, GLMname_vessel); %expt{x}.name
+        
+        % Run the GLM by single predictor
+        diamFluor_opts{x}.load = false; % false; % 
+        diamFluor_opts{x}.saveRoot = sprintf('%s', expt{x}.dir, 'GLMs\GLM_diamFluor\'); %''; %expt{x}.dir
+        [diamFluor_result{x}, diamFluor_summary{x}, ~, diamFluor_pred{x}, diamFluor_resp{x}] = GLMparallel(diamFluor_pred{x}, diamFluor_resp{x}, diamFluor_opts{x}); 
+
+        % create results table and add diamFluor summary by vessel
+        diamFluor_summary_deviances = [diamFluor_summary_deviances; diamFluor_summary{x}.dev];
+        diamFluor_summary_peakCoefficients = [diamFluor_summary_peakCoefficients; diamFluor_summary{x}.peakCoeff'];
+        diamFluor_summary_peakLags = [diamFluor_summary_peakLags; diamFluor_summary{x}.peakLag'];
+
+        % Show results
+%       diamFluor_opts{x}.rShow = 1:diamFluor_resp{x}.N; %1:locoDiamDeform_resp{x}.N; % 1:LocoDeform_resp{x}.N; %NaN;
+%       diamFluor_opts{x}.xVar = 'Time';
+%       ViewGLM(diamFluor_pred{x}, diamFluor_resp{x}, diamFluor_opts{x}, diamFluor_result{x}, diamFluor_summary{x}); %GLMresultFig = 
     end
-   
-    x=xPresent;  %reset experiment row value because AQuA analysis code also had x as variable
-
-    cellFluorPool = [resultsFinal.dFF];
-    fluorResp = cat(1, cellFluorPool{:})';
-    fluorRespZ = zscore(fluorResp, [], 1);
-
-    if ~isnan(expt{x}.csd)
-        fluorResp_preRuns = fluorResp(1:preRunsFrames,:);
-        fluorRespZ_preRuns = zscore(fluorResp_preRuns, [], 1);
-        fluorResp_postRuns = fluorResp(preRunsFrames+1:totalFrames,:);
-        fluorRespZ_postRuns = zscore(fluorResp_postRuns, [], 1);
-    end
-
-    diamFluor_resp{x}.data = fluorRespZ_preRuns;
-    diamFluor_resp{x}.N = size(diamFluor_resp{x}.data, 2); 
-
-    %extract Cell ID from resultsFinal
-    fluorIDs = table2cell(resultsFinal(:,1))';
-    diamFluor_resp{x}.name = fluorIDs;
-
-    % Remove scans with missing data 
-    nanFrame = find(any(isnan([diamFluor_pred{x}.data, diamFluor_resp{x}.data]),2)); % find( isnan(sum(pred(x).data,2)) ); 
-    fprintf('\nRemoving %i NaN-containing frames', numel(nanFrame));
-    diamFluor_pred{x}.data(nanFrame,:) = []; 
-    diamFluor_resp{x}.data(nanFrame,:) = [];
-
-    % Run the GLM by single predictor
-    diamFluor_opts{x}.load = true; % false; % 
-    diamFluor_opts{x}.saveRoot = expt{x}.dir; %''; %expt{x}.dir
-    [diamFluor_result{x}, diamFluor_summary{x}, ~, diamFluor_pred{x}, diamFluor_resp{x}] = GLMparallel(diamFluor_pred{x}, diamFluor_resp{x}, diamFluor_opts{x}); 
-   
 end
 
-%% Show results
+%% Gather all summary data (deviances, peakCoefficients and peakLags of each cell against each vessel) - SCN
+    
+    % diamFluor_summary_deviances 
+    diamFluor_summary_deviances = array2table(diamFluor_summary_deviances);
+    cellHeadings = cellstr(diamFluor_resp{x}.name(1,:));
+    diamFluor_summary_deviances.Properties.VariableNames = cellHeadings;
+    diamFluor_summary_deviances.Properties.RowNames = cellstr(diamFluor_pred{x}.name(1,:)');
+    diamFluor_summary_deviancesBinary = diamFluor_summary_deviances{:,:} > 0.1; %applies the logical operation and creates matrix
+    diamFluor_summary_deviancesBinary = array2table(diamFluor_summary_deviancesBinary, 'VariableNames', diamFluor_summary_deviances.Properties.VariableNames);
+
+    % diamFluor_summary_peakCoefficients 
+    diamFluor_summary_peakCoefficients = array2table(diamFluor_summary_peakCoefficients);
+    cellHeadings = cellstr(diamFluor_resp{x}.name(1,:));
+    diamFluor_summary_peakCoefficients.Properties.VariableNames = cellHeadings;
+    diamFluor_summary_peakCoefficients.Properties.RowNames = cellstr(diamFluor_pred{x}.name(1,:)');
+ 
+    % diamFluor_summary_peakLags
+    diamFluor_summary_peakLags = array2table(diamFluor_summary_peakLags);
+    cellHeadings = cellstr(diamFluor_resp{x}.name(1,:));
+    diamFluor_summary_peakLags.Properties.VariableNames = cellHeadings;
+    diamFluor_summary_peakLags.Properties.RowNames = cellstr(diamFluor_pred{x}.name(1,:)');
+
+    % Save metadata inside FOV folder
+    if diamFluor_pred{x}.data == allDiamZ_preRuns(:,vessel)
+        save(fullfile(diamFluor_opts{x}.saveRoot, strcat(fileTemp,'_GLM_diamZFluor'))); % save metadata inside FOV folder       
+    else
+        save(fullfile(diamFluor_opts{x}.saveRoot, strcat(fileTemp,'_GLM_diamFluor_preRuns')))
+    end
+ 
+    % Access the vessel map based on the current iteration
+    %imshow(vesselROI{1, 22}{1, 1}(7).boxIm)  
+
+%%
 for x = xPresent
     diamFluor_opts{x}.rShow = 1:diamFluor_resp{x}.N; %1:locoDiamDeform_resp{x}.N; % 1:LocoDeform_resp{x}.N; %NaN;
     diamFluor_opts{x}.xVar = 'Time';
