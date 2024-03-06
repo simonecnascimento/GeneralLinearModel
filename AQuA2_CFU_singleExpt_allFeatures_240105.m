@@ -24,7 +24,7 @@ dataCol = struct( ...
 dataTable(:,dataCol.date) = cellfun(@num2str, dataTable(:,dataCol.date), 'UniformOutput',false); 
 
 % --- Specify the row number of interest
-rowOfInterest = 15; 
+rowOfInterest = 16; 
 
 % Extract information from the specified row
 mouse = dataTable{rowOfInterest, dataCol.mouse};
@@ -223,6 +223,9 @@ for s = 1:numel(contents)
                         % Find and remove columns in EventFeatures corresponding to events to delete
                         columnsToDelete = ismember(cellEvents, eventToDelete);
                         EventFeatures(:, columnsToDelete) = [];
+                        %update number of events
+                        numberOfEvents = size(EventFeatures,2);
+
                     else
                         disp(['Event ', num2str(eventToDelete), ' not found for Cell ', num2str(cellID)]);
                     end
