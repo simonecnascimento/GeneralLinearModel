@@ -9,7 +9,7 @@ dataDir =  'D:\2photon\Simone\Simone_Macrophages\'; % 'D:\2photon\Simone\Simone_
 % PARSE DATA TABLE 
 
 % TODO --- Set excel sheet
-dataSet = 'Macrophage'; %'Macrophage'; 'AffCSD'; 'Pollen'; 'Vasculature'; %  'Astrocyte'; %  'Anatomy'; %  'Neutrophil_Simone'; % 'Afferents'
+dataSet = 'MacrophageBaseline'; %'Macrophage'; 'AffCSD'; 'Pollen'; 'Vasculature'; %  'Astrocyte'; %  'Anatomy'; %  'Neutrophil_Simone'; % 'Afferents'
 [regParam, projParam] = DefaultProcessingParams(dataSet); % get default parameters for processing various types of data
 
 regParam.method = 'translation'; %rigid 
@@ -34,7 +34,7 @@ diamFluor_result = cell(1,Nexpt);
 diamFluor_summary = cell(1,Nexpt);
 
 % Specify row number(X) within excel sheet
-xPresent = 15;
+xPresent = 2;
 Npresent = numel(xPresent);
 overwrite = false;
 
@@ -161,7 +161,7 @@ for x = xPresent % x3D %
         diamFluor_resp{x}.data(nanFrame,:) = [];
 
         % GLM name update by vessel
-        GLMname_vessel = sprintf('GLM_diamZFluor_baseline_vessel_%i', vessel);
+        GLMname_vessel = sprintf('GLM_diamFluor_baseline_vessel%i', vessel);
         diamFluor_opts{x}.name = sprintf('%s_%s', fileTemp, GLMname_vessel); 
     
         % Run the GLM
@@ -175,9 +175,9 @@ for x = xPresent % x3D %
         diamFluor_summary_peakLags = [diamFluor_summary_peakLags; diamFluor_summary{x}.peakLag'];
 
         % Show results
-      diamFluor_opts{x}.rShow = 1:diamFluor_resp{x}.N; %1:locoDiamDeform_resp{x}.N; % 1:LocoDeform_resp{x}.N; %NaN;
-      diamFluor_opts{x}.xVar = 'Time';
-      ViewGLM(diamFluor_pred{x}, diamFluor_resp{x}, diamFluor_opts{x}, diamFluor_result{x}, diamFluor_summary{x}); %GLMresultFig = 
+%       diamFluor_opts{x}.rShow = 1:diamFluor_resp{x}.N; %1:locoDiamDeform_resp{x}.N; % 1:LocoDeform_resp{x}.N; %NaN;
+%       diamFluor_opts{x}.xVar = 'Time';
+%       ViewGLM(diamFluor_pred{x}, diamFluor_resp{x}, diamFluor_opts{x}, diamFluor_result{x}, diamFluor_summary{x}); %GLMresultFig = 
 
     end
 end
@@ -187,7 +187,7 @@ end
     diamFluor_summary_deviances = array2table(diamFluor_summary_deviances);
     cellHeadings = cellstr(diamFluor_resp{x}.name(1,:));
     diamFluor_summary_deviances.Properties.VariableNames = cellHeadings;
-    diamFluor_summary_deviances.Properties.RowNames = cellstr(diamFluor_pred{x}.name(1,:)');
+    diamFluor_summary_deviances.Properties.RowNames = sprintfc('Diam %i', 1:size(allDiam,2)); %cellstr(diamFluor_pred{x}.name(1,:)');
     diamFluor_summary_deviancesBinary = diamFluor_summary_deviances{:,:} > 0.1; %applies the logical operation and creates matrix
     diamFluor_summary_deviancesBinary = array2table(diamFluor_summary_deviancesBinary, 'VariableNames', diamFluor_summary_deviances.Properties.VariableNames);
 
@@ -195,16 +195,17 @@ end
     diamFluor_summary_peakCoefficients = array2table(diamFluor_summary_peakCoefficients);
     cellHeadings = cellstr(diamFluor_resp{x}.name(1,:));
     diamFluor_summary_peakCoefficients.Properties.VariableNames = cellHeadings;
-    diamFluor_summary_peakCoefficients.Properties.RowNames = cellstr(diamFluor_pred{x}.name(1,:)');
+    diamFluor_summary_peakCoefficients.Properties.RowNames = sprintfc('Diam %i', 1:size(allDiam,2)); %cellstr(diamFluor_pred{x}.name(1,:)');
  
     % diamFluor_summary_peakLags
     diamFluor_summary_peakLags = array2table(diamFluor_summary_peakLags);
     cellHeadings = cellstr(diamFluor_resp{x}.name(1,:));
     diamFluor_summary_peakLags.Properties.VariableNames = cellHeadings;
-    diamFluor_summary_peakLags.Properties.RowNames = cellstr(diamFluor_pred{x}.name(1,:)');
+    diamFluor_summary_peakLags.Properties.RowNames = sprintfc('Diam %i', 1:size(allDiam,2)); %cellstr(diamFluor_pred{x}.name(1,:)');
 
     % Save metadata inside FOV folder
-    save(fullfile(diamFluor_opts{x}.saveRoot, strcat(fileTemp,'_GLM_diamFluor'))); % save metadata inside FOV folder       
+    save(fullfile(diamFluor_opts{x}.saveRoot, strcat(fileTemp,'_GLM_diamFluor'))); % save metadata inside FOV folder
+    
 
     % Access the vessel map based on the current iteration
     %imshow(vesselROI{1, 22}{1, 1}(7).boxIm)  
