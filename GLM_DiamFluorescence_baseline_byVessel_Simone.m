@@ -34,13 +34,14 @@ diamFluor_result = cell(1,Nexpt);
 diamFluor_summary = cell(1,Nexpt);
 
 % Specify row number(X) within excel sheet
-xPresent = 2;
+xPresent = 3;
 Npresent = numel(xPresent);
 overwrite = false;
 
 GLMname = 'diamFluor_baseline';
 figDir = 'D:\MATLAB\Figures\GLM_DiameterFluorescence\';  % CSD figures\
 mkdir( figDir );
+
 
 % Set GLM rate
 GLMrate = 1; %15.49/16 for 3D data %projParam.rate_target = 1 for 2D data
@@ -167,6 +168,7 @@ for x = xPresent % x3D %
         % Run the GLM
         diamFluor_opts{x}.load = false; % false; % 
         diamFluor_opts{x}.saveRoot = sprintf('%s', expt{x}.dir, 'GLMs\GLM_diamFluor\'); %''; %expt{x}.dir
+        mkdir (diamFluor_opts{x}.saveRoot);
         [diamFluor_result{x}, diamFluor_summary{x}, ~, diamFluor_pred{x}, diamFluor_resp{x}] = GLMparallel(diamFluor_pred{x}, diamFluor_resp{x}, diamFluor_opts{x}); 
 
         % create results table and add diamFluor summary by vessel
@@ -205,7 +207,6 @@ end
 
     % Save metadata inside FOV folder
     save(fullfile(diamFluor_opts{x}.saveRoot, strcat(fileTemp,'_GLM_diamFluor'))); % save metadata inside FOV folder
-    
 
     % Access the vessel map based on the current iteration
     %imshow(vesselROI{1, 22}{1, 1}(7).boxIm)  
