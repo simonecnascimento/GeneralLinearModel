@@ -97,7 +97,7 @@ for x = xPresent % x3D %
  
     bigVesselInd = find(strcmpi({vesselROI{x}{1,1}.vesselType}, {'A'}) | strcmpi({vesselROI{x}{1,1}.vesselType}, {'D'}));
     diamPool = [vesselROI{x}{1,1}(bigVesselInd).diameter];
-    allDiam = cat(1, diamPool.um_lp)';
+    allDiam = cat(1, diamPool.um_lp)'; %lp - low pass filter?
     allDiamZ = zscore(allDiam, [], 1);
 
     diamFluor_pred{x} = struct('data',[], 'name',[], 'N',NaN, 'TB',[], 'lopo',[], 'fam',[]); 
@@ -113,7 +113,7 @@ for x = xPresent % x3D %
 %     diamZFluor_summary_peakLags = [];
 
     for vessel = 1:numel(diamPool)
-        diamFluor_pred{x}.data = allDiamZ(1:900, vessel); %Zscore
+        diamFluor_pred{x}.data = allDiamZ(901:1800, vessel); % 901:1800 Zscore %change range according to Substack
         diamFluor_pred{x}.name = sprintfc('Diam %i', vessel); % 1:size(allDiam,2);  '|Accel|', 'State'
         diamFluor_pred{x}.N = size(diamFluor_pred{x}.data,2);
         for p = flip(1:diamFluor_pred{x}.N)
@@ -141,9 +141,8 @@ for x = xPresent % x3D %
                 load(sprintf('%s\\%s', aquaPath, fileName));
             end
         end
-       
-        x=xPresent;  %reset experiment row value because AQuA analysis code also had x as variable
-        
+     
+      
         cellFluorPool = [resultsFinal.dFF];
         fluorResp = cat(1, cellFluorPool{:})';
         fluorRespZ = zscore(fluorResp, [], 1);
@@ -176,10 +175,10 @@ for x = xPresent % x3D %
         diamFluor_summary_peakCoefficients = [diamFluor_summary_peakCoefficients; diamFluor_summary{x}.peakCoeff'];
         diamFluor_summary_peakLags = [diamFluor_summary_peakLags; diamFluor_summary{x}.peakLag'];
 
-        % Show results
-%       diamFluor_opts{x}.rShow = 1:diamFluor_resp{x}.N; %1:locoDiamDeform_resp{x}.N; % 1:LocoDeform_resp{x}.N; %NaN;
-%       diamFluor_opts{x}.xVar = 'Time';
-%       ViewGLM(diamFluor_pred{x}, diamFluor_resp{x}, diamFluor_opts{x}, diamFluor_result{x}, diamFluor_summary{x}); %GLMresultFig = 
+        %Show results
+        diamFluor_opts{x}.rShow = 1:diamFluor_resp{x}.N; %1:locoDiamDeform_resp{x}.N; % 1:LocoDeform_resp{x}.N; %NaN;
+        diamFluor_opts{x}.xVar = 'Time';
+        ViewGLM(diamFluor_pred{x}, diamFluor_resp{x}, diamFluor_opts{x}, diamFluor_result{x}, diamFluor_summary{x}); %GLMresultFig = 
 
     end
 end
