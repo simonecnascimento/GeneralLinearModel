@@ -100,7 +100,7 @@ filesNamesAll = {
     'Pf4Ai162-18_240221_FOV1_run1_reg_Z01_green_Substack(1-927)_analysis.mat',...
     'Pf4Ai162-20_240229_FOV1_reg_green(Substack1-927)_analysis.mat'};
 
-%Animal
+%% Extract and combine resultData from each experiment
 
 fileNames = filesNamesAll;
 
@@ -112,14 +112,23 @@ for i = 1:length(fileNames)
     % Extract data from the structure (assuming variable names are consistent across files)
     % Here, assuming the variable name is 'result' in each .mat file
     resultData = data.resultsFinal;
-    
+
+    % Create a column with the filename
+    fileNameColumn = repelem(fileNames(i), size(resultData, 1), 1); % Repeat filename for each row
+       
     % Append resultData to combinedTable
-    combinedTable = [combinedTable; resultData];
+    combinedTable = [combinedTable; resultData, table(fileNameColumn)];
 end
 
-% Display or save the combined table as needed
-disp(combinedTable);
+%% duplicating table to manually delete a cell if necessary
 
+figure;
+plot(combinedTable.dFF{425,:})
+combinedTable2 = combinedTable; %duplicating table to manually delete a cell if necessary
+
+%% Sort combinedTable by number of events
+
+combinedTable_sorted = sortrows(combinedTable, 'Number of Events', 'descend');
 
 %% Filter data by cell location
 
@@ -234,7 +243,6 @@ ylabel('Max dFF');
 colorbar; % Display colorbar to show mapping of cluster indices to colors
 
 
-
 % Determine which values belong to which cluster
 for i = 1:k
     cluster_i_indices = find(idx == i); % Indices of data points in cluster i
@@ -335,7 +343,7 @@ ylim([0, 350]);
 % end
 
 
-%% Cluster analysis - time series clustering for dFF
+%% DTW - time series clustering for dFF
 
 % Extract dFF data from combinedTable, converting cell array to matrix
 dFF_data = cell2mat(combinedTable.dFF);
@@ -343,54 +351,86 @@ dFF_data = cell2mat(combinedTable.dFF);
 % Apply z-score normalization to the dFF data
 dFF_data_zscore = zscore(dFF_data, [], 1);
 
-% Calculate the pairwise distance matrix using Dynamic Time Warping (DTW) with z-score normalized data
-num_samples = size(dFF_data_zscore, 1);
-distance_matrix = zeros(num_samples);
+% Calculate the pairwise distance matrix using Dynamic Time Warping
+distance_matrix_zscore = zeros(size(dFF_data_zscore, 1));
 
-% Dynamic Time Warping
-for i = 1:num_samples
-    for j = 1:num_samples
-        distance_matrix(i,j) = dtw(distance_matrix(i,:), distance_matrix(j,:));
+for i = 1:size(dFF_data_zscore, 1)
+    for j = i+1:size(dFF_data_zscore, 1)
+        distance_matrix_zscore(i, j) = dtw(dFF_data_zscore(i, :), dFF_data_zscore(j, :));
+        distance_matrix_zscore(j, i) = distance_matrix_zscore(i, j);
     end
 end
 
-% Elbow method to determine the number of clusters
-max_clusters = 10; % Maximum number of clusters to consider
-sumd = zeros(1, max_clusters);
-for k = 1:max_clusters
-    [~, ~, sumd(k)] = kmeans(distance_matrix, k);
-    fprintf('Sum of distances for %d clusters: %f\n', k, sumd(k));
-end
+%% kmeans clustering
 
-% Plot the elbow curve
-figure;
-plot(1:max_clusters, sumd, 'bx-');
-xlabel('Number of Clusters');
-ylabel('Sum of Distances');
-title('Elbow Method for Optimal Number of Clusters');
+% Perform k-means clustering with the determined number of clusters
+optimal_num_clusters = 8; % Change this to the determined optimal number of clusters
+[idx, centroids] = kmeans(distance_matrix_zscore, optimal_num_clusters);
 
-% Clustering using k-means
-num_clusters = 5;
-[idx, centroids] = kmeans(distance_matrix, num_clusters);
+disp(size(idx));
+disp(min(idx));
+disp(max(idx));
 
-% Visualization
-figure;
-for i = 1:num_clusters
-    subplot(num_clusters, 1, i);
+dFF_data_zscore_limits = [min(dFF_data_zscore(:)), max(dFF_data_zscore(:))];
+
+% % Visualization
+% figure;
+% for i = 1:optimal_num_clusters
+%     subplot(optimal_num_clusters, 1, i);
+%     cluster_idx = find(idx == i);
+%     imagesc(dFF_data_zscore(cluster_idx,:)', 'Color', rand(1,3));
+%     colormap(jet);
+%     caxis(dFF_data_zscore_limits);
+%     title(['Cluster ', num2str(i)]);
+% end
+
+%Heatmap according to cluster
+% Concatenate the time series data for all clusters
+concatenated_data = [];
+cluster_titles = {};
+for i = 1:optimal_num_clusters
     cluster_idx = find(idx == i);
-    plot(dFF_data_zscore(cluster_idx,:)', 'Color', rand(1,3));
-    title(['Cluster ', num2str(i)]);
+    cluster_data = dFF_data_zscore(cluster_idx, :);
+    concatenated_data = [concatenated_data; cluster_data];
+    cluster_titles{i} = ['Cluster ', num2str(i)];
+    if i > 1
+        cluster_start_positions(i) = cluster_start_positions(i-1) + size(cluster_data, 1) + 1; % Add 1 for space between clusters
+    else
+        cluster_start_positions(i) = 1;
+    end
 end
+
+% Plot the concatenated data as a heatmap
+figure;
+imagesc(concatenated_data);
+colormap(jet); % Use a single colormap for the entire heatmap
+caxis(dFF_data_zscore_limits);
+colorbar;
+xlabel('Time');
+ylabel('Cell');
+title('dFF zScore');
+
+% Add cluster titles at the beginning of each cluster
+num_time_points = size(dFF_data_zscore, 2);
+set(gca, 'XTick', 1:100:num_time_points, 'XTickLabel', 1:100:num_time_points);
+set(gca, 'YTick', cluster_start_positions);
+set(gca, 'YTickLabel', cluster_titles);
+
 
 %% Hierarchical clustering
 % https://www.mathworks.com/help/stats/cluster-analysis-example.html#d126e68637
 
 % Perform hierarchical clustering using the distance matrix
-tree = linkage(squareform(distance_matrix), 'average'); % 'average' linkage method
+tree = linkage(distance_matrix_zscore, 'complete'); 
+
+% Ward's linkage minimizes the increase in variance when merging clusters. 
+% It tends to produce compact, well-separated clusters and is less sensitive to noise and outliers. 
+% Ward's linkage might be particularly useful for clustering calcium signaling waves if you're 
+% interested in identifying distinct patterns while minimizing the impact of noise.
 
 % Visualize the dendrogram
 figure;
-dendrogram(tree); % Plot dendrogram
+hDendrogram = dendrogram(tree, 0);
 title('Hierarchical Clustering Dendrogram');
 
 % Allow the user to select the height to cut the dendrogram
@@ -418,18 +458,6 @@ else
     num_clusters = max(clusters);
     disp(['Number of clusters: ' num2str(num_clusters)]);
 end
-
-% Cut the dendrogram to obtain clusters
-clusters = cluster(tree, 'cutoff', height);
-
-% Visualize the clustering results
-figure;
-dendrogram(tree, 'ColorThreshold', height); % Plot dendrogram with color threshold
-title(['Hierarchical Clustering Dendrogram (Height = ' num2str(height) ')']);
-
-% Optional: Display the number of clusters
-num_clusters = max(clusters);
-disp(['Number of clusters: ' num2str(num_clusters)]);
 
 %% kmeans + elbow method for cluster 
 
@@ -538,7 +566,7 @@ end
 %iteractive mapping
 mapcaplot(dataAll, cellID_all);
 
-%% Loadings - correlation between the original variables and the principal components
+%% Loadings Matrix - Loadings - correlation between the original variables and the principal components
 %The loadings are stored as a matrix where each column represents a principal component and each row represents a variable.
 % A high loading value (close to 1 or -1) indicates a strong association between the variable and the component. 
 % Positive loadings indicate positive association, while negative loadings indicate negative association
