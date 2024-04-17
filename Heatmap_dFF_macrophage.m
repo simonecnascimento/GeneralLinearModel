@@ -36,7 +36,6 @@ ylabel('Cell ID');
 
 %% 
 
-
 %Non-perivascular cells
 for non_perivascular = resultsFinal.("Cell location (0,perivascular;1,adjacent;2,none)") == 2
     dFF_Nperivascular = resultsFinal{non_perivascular,"dFF"};
@@ -69,3 +68,117 @@ colorbar;
 title('dFF');
 xlabel('Seconds');
 ylabel('Cell ID');
+
+
+%% Multiple experiments
+
+%all cells
+
+%perivascular cells
+for perivascular = combinedTable.("Cell location (0,perivascular;1,adjacent;2,none)") == 0
+    dFF_data_Perivascular = combinedTable{perivascular,"dFF"};
+end
+dFF_data_Perivascular = cell2mat(dFF_data_Perivascular);
+
+%Non-perivascular cells
+for non_perivascular = combinedTable_sorted.("Cell location (0,perivascular;1,adjacent;2,none)") == 2
+    dFF_data_NonPerivascular = combinedTable{non_perivascular,"dFF"};
+end
+dFF_data_NonPerivascular = cell2mat(dFF_data_NonPerivascular);
+dFF_data_NonPerivascular_reduced = dFF_data_NonPerivascular(1:134,:);
+
+% Apply z-score normalization to the dFF data
+dFF_data_Perivascular_zscore = zscore(dFF_data_Perivascular, [], 1);
+dFF_data_NonPerivascular_zscore = zscore(dFF_data_NonPerivascular, [], 1);
+dFF_data_NonPerivascular_reduced_zscore = zscore(dFF_data_NonPerivascular_reduced, [], 1);
+
+% Combine the data from both groups
+combined_data = [dFF_data_Perivascular_zscore; dFF_data_NonPerivascular_reduced_zscore];
+
+% Determine the colorbar limits based on the combined data
+caxis_limits = [min(combined_data(:)), max(combined_data(:))];
+
+
+%Heatmap all
+figure;
+imagesc(dFF_data_zscore);
+colormap(jet);
+colorbar;
+caxis(caxis_limits); % Set colorbar limits
+title('dFF zscore');
+xlabel('Time(sec)');
+ylabel('Cell');
+
+% Heatmap Perivascular
+figure;
+imagesc(dFF_data_Perivascular_zscore);
+colormap(jet);
+colorbar;
+caxis(caxis_limits); % Set colorbar limits
+title('dFF zscore Perivascular');
+xlabel('Time(sec)');
+ylabel('Cell');
+
+% Heatmap NonPerivascular
+figure;
+imagesc(dFF_data_NonPerivascular_reduced_zscore);
+colormap(jet);
+colorbar;
+caxis(caxis_limits); % Set colorbar limits
+title('dFF zscoreNonPerivascular');
+xlabel('Time(sec)');
+ylabel('Cell');
+
+%% Order cells in order of number of events and plot dFF
+
+% Sort combinedTable by number of events
+combinedTable_sorted = sortrows(combinedTable, 'Number of Events', 'descend');
+
+%perivascular cells
+for perivascular_sorted = combinedTable_sorted.("Cell location (0,perivascular;1,adjacent;2,none)") == 0
+    dFF_data_Perivascular_sorted = combinedTable_sorted{perivascular_sorted,"dFF"};
+end
+dFF_data_Perivascular_sorted = cell2mat(dFF_data_Perivascular_sorted);
+
+%Non-perivascular cells
+for non_perivascular_sorted = combinedTable_sorted.("Cell location (0,perivascular;1,adjacent;2,none)") == 2
+    dFF_data_NonPerivascular_sorted = combinedTable_sorted{non_perivascular_sorted,"dFF"};
+end
+dFF_data_NonPerivascular_sorted = cell2mat(dFF_data_NonPerivascular_sorted);
+dFF_data_NonPerivascular_sorted_reduced = dFF_data_NonPerivascular_sorted(1:134,:);
+
+% Apply z-score normalization to the dFF data
+dFF_data_Perivascular_sorted_zscore = zscore(dFF_data_Perivascular_sorted, [], 1);
+dFF_data_NonPerivascular_sorted_zscore = zscore(dFF_data_NonPerivascular_sorted, [], 1);
+dFF_data_NonPerivascular_sorted_reduced_zscore = zscore(dFF_data_NonPerivascular_sorted_reduced, [], 1);
+
+% Combine the data from both groups
+combined_data_sorted = [dFF_data_Perivascular_sorted_zscore; dFF_data_NonPerivascular_sorted_reduced_zscore];
+
+% Determine the colorbar limits based on the combined data
+caxis_limits_sorted = [min(combined_data_sorted(:)), max(combined_data_sorted(:))];
+
+% Heatmap Perivascular
+figure;
+imagesc(dFF_data_Perivascular_sorted_zscore);
+colormap(jet);
+colorbar;
+caxis(caxis_limits); % Set colorbar limits
+title('dFF zscore Perivascular');
+xlabel('Time(sec)');
+ylabel('Cell');
+
+% Heatmap NonPerivascular
+figure;
+imagesc(dFF_data_NonPerivascular_sorted_reduced_zscore);
+colormap(jet);
+colorbar;
+caxis(caxis_limits); % Set colorbar limits
+title('dFF zscoreNonPerivascular');
+xlabel('Time(sec)');
+ylabel('Cell');
+
+
+%%
+
+
