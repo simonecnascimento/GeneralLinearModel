@@ -34,7 +34,7 @@ diamFluor_result = cell(1,Nexpt);
 diamFluor_summary = cell(1,Nexpt);
 
 % Specify row number(X) within excel sheet
-xPresent = 3;
+xPresent = 23;
 Npresent = numel(xPresent);
 overwrite = false;
 
@@ -95,7 +95,7 @@ for x = xPresent % x3D %
     % PREDICTORS
     % Define vascular diameter data 
  
-    bigVesselInd = find(strcmpi({vesselROI{x}{1,1}.vesselType}, {'A'}) | strcmpi({vesselROI{x}{1,1}.vesselType}, {'D'}));
+    bigVesselInd = find(strcmpi({vesselROI{x}{1,1}.vesselType}, {'A'}) | strcmpi({vesselROI{x}{1,1}.vesselType}, {'V'}) | strcmpi({vesselROI{x}{1,1}.vesselType}, {'D'}));
     diamPool = [vesselROI{x}{1,1}(bigVesselInd).diameter];
     allDiam = cat(1, diamPool.um_lp)'; %lp - low pass filter?
     allDiamZ = zscore(allDiam, [], 1);
@@ -113,7 +113,7 @@ for x = xPresent % x3D %
 %     diamZFluor_summary_peakLags = [];
 
     for vessel = 1:numel(diamPool)
-        diamFluor_pred{x}.data = allDiamZ(901:1800, vessel); % 901:1800 Zscore %change range according to Substack
+        diamFluor_pred{x}.data = allDiamZ(1:927, vessel); % 901:1800 Zscore %change range according to Substack
         diamFluor_pred{x}.name = sprintfc('Diam %i', vessel); % 1:size(allDiam,2);  '|Accel|', 'State'
         diamFluor_pred{x}.N = size(diamFluor_pred{x}.data,2);
         for p = flip(1:diamFluor_pred{x}.N)
@@ -129,7 +129,7 @@ for x = xPresent % x3D %
         % Define response
 
         % Get/Load fluorescence data
-        aquaPath = sprintf('%sAQuA2\\1Hz', expt{x}.dir);
+        aquaPath = sprintf('%sAQuA2\', expt{x}.dir);
         files_aqua = dir(aquaPath);
 
         % Exclude '.', '..', and 'Thumbs.db' entries, so 'contents' contains only the actual files and folders in the directory
@@ -142,7 +142,6 @@ for x = xPresent % x3D %
             end
         end
      
-      
         cellFluorPool = [resultsFinal.dFF];
         fluorResp = cat(1, cellFluorPool{:})';
         fluorRespZ = zscore(fluorResp, [], 1);
