@@ -9,7 +9,7 @@ dataDir =  'D:\2photon\Simone\Simone_Macrophages\'; % 'D:\2photon\Simone\Simone_
 % PARSE DATA TABLE 
 
 % TODO --- Set excel sheet
-dataSet = 'Macrophage'; %'Macrophage'; 'AffCSD'; 'Pollen'; 'Vasculature'; %  'Astrocyte'; %  'Anatomy'; %  'Neutrophil_Simone'; % 'Afferents'
+dataSet = 'MacrophageBaseline'; %'Macrophage'; 'AffCSD'; 'Pollen'; 'Vasculature'; %  'Astrocyte'; %  'Anatomy'; %  'Neutrophil_Simone'; % 'Afferents'
 [regParam, projParam] = DefaultProcessingParams(dataSet); % get default parameters for processing various types of data
 
 regParam.method = 'translation'; %rigid 
@@ -34,7 +34,7 @@ locoFluor_result = cell(1,Nexpt);
 locoFluor_summary = cell(1,Nexpt);
 
 % Specify row number(X) within excel sheet
-xPresent = 22;
+xPresent = 19;
 Npresent = numel(xPresent);
 overwrite = false;
 
@@ -108,7 +108,7 @@ for x = xPresent % x3D %
         for preRun = 1:expt{x}.Nruns
             loco{x}(preRun).Vdown(1:15) = [];
             loco{x}(preRun).Adown(1:15) = [];
-            %loco{x}(preRun).stateDown(1:15) = [];
+            loco{x}(preRun).stateDown(1:15) = [];
         end
     end
 
@@ -123,16 +123,15 @@ for x = xPresent % x3D %
     tempStateCat = tempStateCat(2:end-1);
 
     %adjust frames based on Substack used
-    if expt{x}.Nruns > 1
-        substack = input('Enter substack frames (e.g., 200:5599): ');
-        %adjust frames based on Substack used
-        tempVelocityCat = tempVelocityCat(substack); 
-        tempAccelCat = tempAccelCat(substack);
-        tempStateCat = tempStateCat(substack);
-    end
- 
+    substack = input('Enter substack frames (e.g., 200:5599): ');
+    %adjust frames based on Substack used
+    tempVelocityCat = tempVelocityCat(substack); 
+    tempAccelCat = tempAccelCat(substack);
+    tempStateCat = tempStateCat(substack);
+
+
     locoFluor_pred{x} = struct('data',[], 'name',[], 'N',NaN, 'TB',[], 'lopo',[], 'fam',[]); 
-    locoFluor_pred{x}.data = [tempVelocityCat, tempAccelCat]; %  tempStateCat
+    locoFluor_pred{x}.data = [tempVelocityCat, tempAccelCat,  tempStateCat]; %  tempStateCat
     locoFluor_pred{x}.name = {'Velocity', '|Accel|', 'State'}; %'State'
     locoFluor_pred{x}.N = size(locoFluor_pred{x}.data,2);
     for p = flip(1:locoFluor_pred{x}.N) 
@@ -164,8 +163,9 @@ for x = xPresent % x3D %
     locoFluor_resp{x}.data(nanFrame,:) = [];
 
     % Run the GLM
-    locoFluor_opts{x}.load = true; % false; % 
-    locoFluor_opts{x}.saveRoot = expt{x}.dir; %''; %expt{x}.dir
+    locoFluor_opts{x}.load = false; % false; % 
+    locoFluor_opts{x}.saveRoot = sprintf('%s', expt{x}.dir, 'GLMs\GLM_locoFluor\'); 
+    mkdir (diamFluor_opts{x}.saveRoot);
     [locoFluor_result{x}, locoFluor_summary{x}, ~, locoFluor_pred{x}, locoFluor_resp{x}] = GLMparallel(locoFluor_pred{x}, locoFluor_resp{x}, locoFluor_opts{x}); 
 end
 %%
@@ -174,6 +174,10 @@ for x = xPresent
     locoFluor_opts{x}.xVar = 'Time';
     ViewGLM(locoFluor_pred{x}, locoFluor_resp{x}, locoFluor_opts{x}, locoFluor_result{x}, locoFluor_summary{x}); %GLMresultFig = 
 end
+
+ % Save metadata inside FOV folder
+ save(fullfile(locoFluor_opts{x}.saveRoot, strcat(fileTemp,'_GLM_locoFluor'))); % save metadata inside FOV folder
+
 
 %% Pool results across experiments
 LKFdevPool = []; goodDevPool = [];
