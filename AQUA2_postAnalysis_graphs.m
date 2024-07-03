@@ -10,51 +10,18 @@ group_str = cell(size(cellLocation));
 group_str(cellLocation == 0) = {'Perivascular'};
 group_str(cellLocation == 2) = {'NonPerivascular'};
 
+% Convert numeric group labels to strings
+group_str = cell(size(cellLocation));
+group_str(redLabel == 0) = {'RedLabel'};
+group_str(redLabel == 1) = {'NotRedLabel'};
+
 % Add jitter to y-values
-jitter_amount = 0.3; % Adjust the amount of jitter as needed
+jitter_amount = 0.05; % Adjust the amount of jitter as needed
 jitter_perivascular = (rand(sum(perivascular_indices), 1) - 0.5) * jitter_amount;
 jitter_nonPerivascular = (rand(sum(nonPerivascular_indices), 1) - 0.5) * jitter_amount;
 
 % Define spacing factor for x-axis data points
-x_spacing_factor = 0.05; % Adjust as needed
-
-%% Circularity Perivascular x Non-Perivascular
-
-% Extract data from the table
-circularity = combinedTable{:,4};
-circularity_perivascular = circularity(perivascular_indices); % Data points belonging to group 0
-circularity_nonPerivascular = circularity(nonPerivascular_indices); % Data points belonging to group 2
-
-% Plot scatterplot with jitter
-figure;
-scatter(repmat(0, sum(perivascular_indices), 1) + jitter_perivascular, circularity_perivascular, 'bo'); hold on;
-scatter(repmat(1, sum(nonPerivascular_indices), 1) + jitter_nonPerivascular, circularity_nonPerivascular, 'ro'); 
-
-% Calculate mean of each group
-mean_perivascular = mean(circularity_perivascular);
-mean_nonPerivascular = mean(circularity_nonPerivascular);
-
-% Plot means
-plot(0, mean_perivascular, 'bx', 'MarkerSize', 20, 'LineWidth', 2);
-plot(1, mean_nonPerivascular, 'rx', 'MarkerSize', 20, 'LineWidth', 2);
-
-% Customize plot
-ylabel('Circularity');
-xticks([0 1]); % Set x-axis ticks
-xticklabels({'Perivascular', 'NonPerivascular'}); % Set x-axis tick labels
-title('Circularity Perivascular x NonPerivascular');
-% Increase y-axis range
-ylim([0, 0.6]);
-
-% Perform t-test
-[h, p_value] = ttest2(circularity_perivascular, circularity_nonPerivascular);
-
-% Display p-value
-disp(['The p-value between Group 0 and Group 2 is: ', num2str(p_value)]);
-
-% Add p-value to the graph
-text(0.5, 0.5, ['p-value = ', num2str(p_value)], 'HorizontalAlignment', 'center');
-
+x_spacing_factor = 0.02; % Adjust as needed
 
 %% RedLabel Perivascular x NonPerivascular
 
@@ -90,40 +57,151 @@ ylim([0, 350]);
 %     end
 % end
 
-%% Number of Events Perivascular x Non-Perivascular
+%% Circularity Perivascular x Non-Perivascular - SCATTERPLOT
+
+% Extract data from the table
+circularity = combinedTable{:,4};
+circularity_perivascular = circularity(perivascular_indices); % Data points belonging to group 0
+circularity_nonPerivascular = circularity(nonPerivascular_indices); % Data points belonging to group 2
+
+% Plot scatterplot with jitter
+figure;
+scatter(0 - x_spacing_factor + jitter_perivascular, circularity_perivascular, 'ro'); hold on;
+scatter(0.2 + x_spacing_factor + jitter_nonPerivascular, circularity_nonPerivascular, 'bo'); 
+
+% Calculate mean of each group
+meanCircularity_perivascular = mean(circularity_perivascular);
+meanCircularity_nonPerivascular = mean(circularity_nonPerivascular);
+
+% Plot means
+plot(0 - x_spacing_factor, meanCircularity_perivascular, 'kx', 'MarkerSize', 10, 'LineWidth', 5);
+plot(0.2 + x_spacing_factor, meanCircularity_nonPerivascular, 'kx', 'MarkerSize', 10, 'LineWidth', 5);
+
+% Customize plot
+ylabel('Circularity');
+xticks([(0 - x_spacing_factor)  (0.2 + x_spacing_factor)]); % Set x-axis ticks
+xticklabels({'Perivascular', 'NonPerivascular'}); % Set x-axis tick labels
+%title('Circularity Perivascular x NonPerivascular');
+% Increase y-axis range
+xlim([-0.1, 0.3]);
+ylim([0, 0.7]);
+
+% Perform t-test
+[h, circularity_p_value] = ttest2(circularity_perivascular, circularity_nonPerivascular);
+
+% Add p-value to the graph
+if circularity_p_value < 0.001
+    text(0.1, 0.6, 'p-value < 0.001', 'HorizontalAlignment', 'center');
+else
+    text(0.1, 0.6, ['p-value = ', num2str(circularity_p_value)], 'HorizontalAlignment', 'center');
+end
+
+% Display p-value
+disp(['The p-value between Group 0 and Group 2 is: ', num2str(circularity_p_value)]);
+
+% Add p-value to the graph
+%text(0.1, 0.6, ['p-value = ', num2str(p_value)], 'HorizontalAlignment', 'center');
+text(0.1, 0.6, 'p-value<0.001')
+
+%% Circularity Perivascular x Non-Perivascular - BAR GRAPH
+
+figure;
+circularityGraph = bar([meanCircularity_perivascular, meanCircularity_nonPerivascular]); hold on;
+xticks([1, 2]); % Set x-axis ticks
+xticklabels({'Perivascular', 'NonPerivascular'}); % Set x-axis tick labels
+ylabel('Circularity');
+ylim([0, 0.4]);
+box off;
+
+% Define colors for each bar
+circularityGraph.FaceColor = 'flat';
+circularityGraph.CData(1,:) = [0.6350 0.0780 0.1840];
+
+% Calculate SEM
+semCircularity_perivascular = std(circularity_perivascular) / sqrt(length(circularity_perivascular));
+semCircularity_nonPerivascular = std(circularity_nonPerivascular) / sqrt(length(circularity_nonPerivascular));
+
+% Add error bars representing SEM
+errorbar([1, 2], [meanCircularity_perivascular, meanCircularity_nonPerivascular], ...
+    [semCircularity_perivascular, semCircularity_nonPerivascular], ...
+    'k.', 'LineWidth', 1.5);
+
+% Set aspect ratio
+pbaspect([1 1 2]); % Adjust the aspect ratio for a more rectangular shape
+
+% Add p-value to the graph
+if circularity_p_value < 0.001
+    text(1.5, 0.3, 'p-value < 0.001', 'HorizontalAlignment', 'center');
+else
+    text(1.5, 0.3, ['p-value = ', num2str(circularity_p_value)], 'HorizontalAlignment', 'center');
+end
+
+% Display p-value
+disp(['The p-value between Group 0 and Group 2 is: ', num2str(circularity_p_value)]);
+
+%% Circularity Perivascular x Non-Perivascular - BOXPLOT GRAPH
+
+% Extract circularity data for each group
+groupCircularity_data = {circularity_perivascular, circularity_nonPerivascular};
+
+% Plot boxplot with specified colors
+figure;
+boxplot(groupCircularity_data); hold on;
+xticks([1, 2]); % Set x-axis ticks
+xticklabels({'Perivascular', 'NonPerivascular'}); % Set x-axis tick labels
+ylabel('Circularity');
+ylim([0, 0.7]);
+
+boxplot(groupCircularity_data, 'Colors', barColors, 'Symbol', 'k.');
+
+% Calculate SEM
+semCircularity_perivascular = std(circularity_perivascular) / sqrt(length(circularity_perivascular));
+semCircularity_nonPerivascular = std(circularity_nonPerivascular) / sqrt(length(circularity_nonPerivascular));
+
+% Add error bars representing SEM
+errorbar([1, 2], [meanCircularity_perivascular, meanCircularity_nonPerivascular], ...
+    [semCircularity_perivascular, semCircularity_nonPerivascular], ...
+    'k.', 'LineWidth', 1.5);
+
+% Set aspect ratio
+pbaspect([2 1 1]); % Adjust the aspect ratio for a more rectangular shape
+
+% Remove top and right lines
+box off;
+
+% Add p-value to the graph
+if circularity_p_value < 0.001
+    text(1.5, 0.6, 'p-value < 0.001', 'HorizontalAlignment', 'center');
+else
+    text(1.5, 0.6, ['p-value = ', num2str(circularity_p_value)], 'HorizontalAlignment', 'center');
+end
+
+% Display p-value
+disp(['The p-value between Group 0 and Group 2 is: ', num2str(circularity_p_value)]);
+
+
+
+%% Number of Events Perivascular x Non-Perivascular - SCATTERPLOT
 
 numberOfEvents = combinedTable{:,12};
 numberOfEvents_perivascular = numberOfEvents(perivascular_indices); % Data points belonging to group 0
 numberOfEvents_nonPerivascular = numberOfEvents(nonPerivascular_indices); % Data points belonging to group 2
-
-% % Identify outliers
-% lower_threshold = mean_perivascular - 2 * std(numberOfEvents_perivascular); % Lower threshold
-% upper_threshold = mean_perivascular + 2 * std(numberOfEvents_perivascular); % Upper threshold
-% outliers_perivascular = numberOfEvents_perivascular < lower_threshold | numberOfEvents_perivascular > upper_threshold; % Outliers for group 0
-% 
-% lower_threshold = mean_nonPerivascular - 2 * std(numberOfEvents_nonPerivascular); % Lower threshold
-% upper_threshold = mean_nonPerivascular + 2 * std(numberOfEvents_NonPerivascular); % Upper threshold
-% outliers_nonPerivascular = numberOfEvents_nonPerivascular < lower_threshold | numberOfEvents_nonPerivascular > upper_threshold; % Outliers for group 2
-% 
-% % Plot outliers
-% scatter(repmat(0, sum(outliers_perivascular), 1) + jitter_amount, numberOfEvents_perivascular(outliers_perivascular), 'g*', 'LineWidth', 2);
-% scatter(repmat(1, sum(outliers_nonPerivascular), 1) + jitter_amount, numberOfEvents_nonPerivascular(outliers_nonPerivascular), 'g*', 'LineWidth', 2);
 
 % Customize plot
 legend('Perivascular', 'NonPerivascular', 'Mean Perivascular', 'Mean NonPerivascular', 'Outliers');
 
 % Plot scatterplot with jitter
 figure;
-scatter(repmat(0, sum(Perivascular_indices), 1) + jitter_perivascular, numberOfEvents_Perivascular, 'bo'); hold on;
-scatter(repmat(1, sum(NonPerivascular_indices), 1) + jitter_nonPerivascular, numberOfEvents_NonPerivascular, 'ro'); 
+scatter(repmat(0, sum(perivascular_indices), 1) + jitter_perivascular, numberOfEvents_perivascular, 'bo'); hold on;
+scatter(repmat(1, sum(nonPerivascular_indices), 1) + jitter_nonPerivascular, numberOfEvents_nonPerivascular, 'ro'); 
 
 % Calculate mean of each group
-mean_perivascular = mean(numberOfEvents_perivascular);
-mean_nonPerivascular = mean(numberOfEvents_nonPerivascular);
+meanNumberOfEvents_perivascular = mean(numberOfEvents_perivascular);
+meanNumberOfEvents_nonPerivascular = mean(numberOfEvents_nonPerivascular);
 
 % Plot means
-plot(0, mean_perivascular, 'bx', 'MarkerSize', 20, 'LineWidth', 2);
-plot(1, mean_nonPerivascular, 'rx', 'MarkerSize', 20, 'LineWidth', 2);
+plot(0, meanNumberOfEvents_perivascular, 'bx', 'MarkerSize', 20, 'LineWidth', 2);
+plot(1, meanNumberOfEvents_nonPerivascular, 'rx', 'MarkerSize', 20, 'LineWidth', 2);
 
 % Customize plot
 ylabel('Number of Events');
@@ -136,15 +214,52 @@ min(numberOfEvents(:));
 ylim([0, 44]);
 
 % Perform t-test
-[h, p_value] = ttest2(numberOfEvents_perivascular, numberOfEvents_nonPerivascular);
+[h, NumberOfEvents_p_value] = ttest2(numberOfEvents_perivascular, numberOfEvents_nonPerivascular);
 
 % Display p-value
-disp(['The p-value between Group 0 and Group 2 is: ', num2str(p_value)]);
+disp(['The p-value between Group 0 and Group 2 is: ', num2str(NumberOfEvents_p_value)]);
 
 % Add p-value to the graph
-text(0.5, 35, ['p-value = ', num2str(p_value)], 'HorizontalAlignment', 'center');
+text(0.5, 35, ['p-value = ', num2str(NumberOfEvents_p_value)], 'HorizontalAlignment', 'center');
 
-%% Area (um2) Perivascular x Non-Perivascular  
+%% Number of Events Perivascular x Non-Perivascular - BAR GRAPH
+
+figure;
+numberOfEventsGraph = bar([meanNumberOfEvents_perivascular, meanNumberOfEvents_nonPerivascular]); hold on;
+xticks([1, 2]); % Set x-axis ticks
+xticklabels({'Perivascular', 'NonPerivascular'}); % Set x-axis tick labels
+ylabel('Number of Events');
+ylim([0, 4]);
+box off;
+
+% Define colors for each bar
+numberOfEventsGraph.FaceColor = 'flat';
+numberOfEventsGraph.CData(1,:) = [0.6350 0.0780 0.1840];
+
+% Calculate SEM
+semNumberOfEvents_perivascular = std(numberOfEvents_perivascular) / sqrt(length(numberOfEvents_perivascular));
+semNumberOfEvents_nonPerivascular = std(numberOfEvents_nonPerivascular) / sqrt(length(numberOfEvents_nonPerivascular));
+
+% Add error bars representing SEM
+errorbar([1, 2], [meanNumberOfEvents_perivascular, meanNumberOfEvents_nonPerivascular], ...
+    [semNumberOfEvents_perivascular, semNumberOfEvents_nonPerivascular], ...
+    'k.', 'LineWidth', 1.5);
+
+% Set aspect ratio
+pbaspect([1 1 2]); % Adjust the aspect ratio for a more rectangular shape
+
+% Add p-value to the graph
+if NumberOfEvents_p_value < 0.001
+    text(1.5, 3.5, 'p-value < 0.001', 'HorizontalAlignment', 'center');
+else
+    text(1.5, 3.5, ['p-value = ', num2str(NumberOfEvents_p_value)], 'HorizontalAlignment', 'center');
+end
+
+% Display p-value
+disp(['The p-value between Group 0 and Group 2 is: ', num2str(NumberOfEvents_p_value)]);
+
+
+%% Area (um2) Perivascular x Non-Perivascular  - SCATTERPLOT
 
 % Extract data from the table
 area = combinedTable{:,2};
@@ -157,19 +272,19 @@ legend('Perivascular', 'NonPerivascular', 'Mean Perivascular', 'Mean NonPerivasc
 % Plot scatterplot with jitter
 figure;
 scatter(repmat(0 - x_spacing_factor, sum(perivascular_indices), 1) + jitter_perivascular, area_perivascular, 'bo'); hold on;
-scatter(repmat(1 + x_spacing_factor, sum(nonPerivascular_indices), 1) + jitter_nonPerivascular, area_nonPerivascular, 'ro');
+scatter(repmat(0.35 + x_spacing_factor, sum(nonPerivascular_indices), 1) + jitter_nonPerivascular, area_nonPerivascular, 'ro');
 
 % Calculate mean of each group
-mean_perivascular = mean(area_perivascular);
-mean_nonPerivascular = mean(area_nonPerivascular);
+meanArea_perivascular = mean(area_perivascular);
+meanArea_nonPerivascular = mean(area_nonPerivascular);
 
 % Plot means
-plot(0 - x_spacing_factor, mean_perivascular, 'bx', 'MarkerSize', 20, 'LineWidth', 2);
-plot(1 + x_spacing_factor, mean_nonPerivascular, 'rx', 'MarkerSize', 20, 'LineWidth', 2);
+plot(0 - x_spacing_factor, mean_perivascular, 'kx', 'MarkerSize', 10, 'LineWidth', 5);
+plot(0.35 + x_spacing_factor, mean_nonPerivascular, 'kx', 'MarkerSize', 10, 'LineWidth', 5);
 
 % Customize plot
 ylabel('Area (um2)');
-xticks([-0.05, 1.05]); % Set x-axis ticks
+xticks([-0.05, 0.4]); % Set x-axis ticks
 xticklabels({'Perivascular', 'NonPerivascular'}); % Set x-axis tick labels
 title('Area Perivascular x NonPerivascular');
 % Increase y-axis range
@@ -178,36 +293,72 @@ min(area(:));
 ylim([100, 800]);
 
 % Perform t-test
-[h, p_value] = ttest2(area_perivascular, area_nonPerivascular);
+[h, area_p_value] = ttest2(area_perivascular, area_nonPerivascular);
 
 % Display p-value
-disp(['The p-value between Group 0 and Group 2 is: ', num2str(p_value)]);
+disp(['The p-value between Group 0 and Group 2 is: ', num2str(area_p_value)]);
 
 % Add p-value to the graph
-text(0.5, 750, ['p-value = ', num2str(p_value)], 'HorizontalAlignment', 'center');
+text(0.25, 750, ['p-value = ', num2str(area_p_value)], 'HorizontalAlignment', 'center');
+
+%% Area Perivascular x Non-Perivascular - BAR GRAPH
+
+figure;
+areaGraph = bar([meanArea_perivascular, meanArea_nonPerivascular]); hold on;
+xticks([1, 2]); % Set x-axis ticks
+xticklabels({'Perivascular', 'NonPerivascular'}); % Set x-axis tick labels
+ylabel('Area (um2)');
+ylim([0, 500]);
+box off;
+
+% Define colors for each bar
+areaGraph.FaceColor = 'flat';
+areaGraph.CData(1,:) = [0.6350 0.0780 0.1840];
+
+% Calculate SEM
+semArea_perivascular = std(area_perivascular) / sqrt(length(area_perivascular));
+semArea_nonPerivascular = std(area_nonPerivascular) / sqrt(length(area_nonPerivascular));
+
+% Add error bars representing SEM
+errorbar([1, 2], [meanArea_perivascular, meanArea_nonPerivascular], ...
+    [semArea_perivascular, semArea_nonPerivascular], ...
+    'k.', 'LineWidth', 1.5);
+
+% Set aspect ratio
+pbaspect([1 1 2]); % Adjust the aspect ratio for a more rectangular shape
+
+% Add p-value to the graph
+if area_p_value < 0.001
+    text(1.5, 400, 'p-value < 0.001', 'HorizontalAlignment', 'center');
+else
+    text(1.5, 400, ['p-value = ', num2str(area_p_value)], 'HorizontalAlignment', 'center');
+end
+
+% Display p-value
+disp(['The p-value between Group 0 and Group 2 is: ', num2str(area_p_value)]);
 
 %% Event-based max_dFF Perivascular x Non-Perivascular    TO FIX VARIABLES
 
 max_dFF = combinedTable{:,5};
-max_dFF_perivascular = max_dFF(Perivascular_indices); % Data points belonging to group 0
-max_dFF_nonPerivascular = max_dFF(NonPerivascular_indices); % Data points belonging to group 2
+max_dFF_perivascular = max_dFF(perivascular_indices); % Data points belonging to group 0
+max_dFF_nonPerivascular = max_dFF(nonPerivascular_indices); % Data points belonging to group 2
 
 % Plot scatterplot with jitter
 figure;
-scatter(repmat(0 - x_spacing_factor, sum(perivascular_indices), 1) + jitter_0, data_group_0, 'bo'); hold on;
-scatter(repmat(1 + x_spacing_factor, sum(nonPerivascular_indices), 1) + jitter_2, data_group_2, 'ro');
+scatter(repmat(0.05, sum(perivascular_indices), 1) + jitter_perivascular, max_dFF_perivascular, 'ro'); hold on;
+scatter(repmat(0.35 + x_spacing_factor, sum(nonPerivascular_indices), 1) + jitter_nonPerivascular, max_dFF_nonPerivascular, 'bo');
 
 % Calculate mean of each group
-mean_perivascular = mean(data_group_0);
-mean_nonPerivascular = mean(data_group_2);
+mean_maxDFF_perivascular = mean(max_dFF_perivascular);
+mean_maxDFF_nonPerivascular = mean(max_dFF_nonPerivascular);
 
 % Plot means
-plot(0 - x_spacing_factor, mean_perivascular, 'bx', 'MarkerSize', 20, 'LineWidth', 2);
-plot(1 + x_spacing_factor, mean_nonPerivascular, 'rx', 'MarkerSize', 20, 'LineWidth', 2);
+plot(0.05, mean_maxDFF_perivascular, 'rx', 'MarkerSize', 20, 'LineWidth', 2);
+plot(0.35 + x_spacing_factor, mean_maxDFF_nonPerivascular, 'bx', 'MarkerSize', 20, 'LineWidth', 2);
 
 % Customize plot
 ylabel('Max dFF');
-xticks([-0.05, 1.05]); % Set x-axis ticks
+xticks([0.05, 0.4]); % Set x-axis ticks
 xticklabels({'Perivascular', 'NonPerivascular'}); % Set x-axis tick labels
 title('Max dFF Perivascular x NonPerivascular');
 % Increase y-axis range
@@ -216,13 +367,50 @@ min(max_dFF(:));
 ylim([0, 7]);
 
 % Perform t-test
-[h, p_value] = ttest2(data_group_0, data_group_2);
+[h, maxDFF_p_value] = ttest2(max_dFF_perivascular, max_dFF_nonPerivascular);
 
 % Display p-value
-disp(['The p-value between Group 0 and Group 2 is: ', num2str(p_value)]);
+disp(['The p-value between Group 0 and Group 2 is: ', num2str(maxDFF_p_value)]);
 
 % Add p-value to the graph
-text(0.5, 6, ['p-value = ', num2str(p_value)], 'HorizontalAlignment', 'center');
+text(0.5, 6, ['p-value = ', num2str(maxDFF_p_value)], 'HorizontalAlignment', 'center');
+
+%% max Dff Perivascular x Non-Perivascular - BAR GRAPH
+
+figure;
+max_dFF_Graph = bar([mean_maxDFF_perivascular, mean_maxDFF_nonPerivascular]); hold on;
+xticks([1, 2]); % Set x-axis ticks
+xticklabels({'Perivascular', 'NonPerivascular'}); % Set x-axis tick labels
+ylabel('Max dFF');
+ylim([0, 1.5]);
+box off;
+
+% Define colors for each bar
+max_dFF_Graph.FaceColor = 'flat';
+max_dFF_Graph.CData(1,:) = [0.6350 0.0780 0.1840];
+
+% Calculate SEM
+sem_maxDFF_perivascular = std(max_dFF_perivascular) / sqrt(length(max_dFF_perivascular));
+sem_maxDFF_nonPerivascular = std(max_dFF_nonPerivascular) / sqrt(length(max_dFF_nonPerivascular));
+
+% Add error bars representing SEM
+errorbar([1, 2], [mean_maxDFF_perivascular, mean_maxDFF_nonPerivascular], ...
+    [sem_maxDFF_perivascular, sem_maxDFF_nonPerivascular], ...
+    'k.', 'LineWidth', 1.5);
+
+% Set aspect ratio
+pbaspect([1 1 2]); % Adjust the aspect ratio for a more rectangular shape
+
+% Add p-value to the graph
+if area_p_value < 0.001
+    text(1.5, 400, 'p-value < 0.001', 'HorizontalAlignment', 'center');
+else
+    text(1.5, 400, ['p-value = ', num2str(area_p_value)], 'HorizontalAlignment', 'center');
+end
+
+% Display p-value
+disp(['The p-value between Group 0 and Group 2 is: ', num2str(area_p_value)]);
+
 
 %% CFU-based maxdFF    
 
@@ -501,13 +689,13 @@ corr_nonPerivascular = corrcoef(max_dFF_nonPerivascular, duration10to10_nonPeriv
 % Plot correlation with different colors for each group
 figure;
 hold on;
-scatter(duration10to10_perivascular, max_dFF_perivascular, 50, 'b', 'filled'); % Group 1 in blue
-scatter(duration10to10_nonPerivascular, max_dFF_nonPerivascular, 50, 'r', 'filled'); % Group 2 in red
+scatter(duration10to10_perivascular, max_dFF_perivascular, 50, 'r', 'filled'); % Group 1 in blue
+scatter(duration10to10_nonPerivascular, max_dFF_nonPerivascular, 50, 'b', 'filled'); % Group 2 in red
 
 % Customize the plot
 xlabel('duration 10to10');
 ylabel('Max dFF');
-title('Correlation between Max dFF and Rising Time');
+%title('Correlation between Max dFF and Rising Time');
 legend({['Perivascular (corr: ', num2str(corr_perivascular(1,2)), ')'], ['NonPerivascular (corr: ', num2str(corr_nonPerivascular(1,2)), ')']});
 grid on;
 hold off;
@@ -515,8 +703,8 @@ hold off;
 %% Correlation between max_dFF and numberOfEvents
 
 % Calculate correlation coefficients
-corr_perivascular = corrcoef(max_dFF_perivascular, numberOfEvents_perivascular);
-corr_nonPerivascular = corrcoef(max_dFF_nonPerivascular, numberOfEvents_nonPerivascular);
+corr_perivascular = corrcoef(numberOfEvents_perivascular, max_dFF_perivascular);
+corr_nonPerivascular = corrcoef(numberOfEvents_nonPerivascular, max_dFF_nonPerivascular);
 
 % Plot correlation with different colors for each group
 figure;
@@ -527,7 +715,102 @@ scatter(numberOfEvents_nonPerivascular, max_dFF_nonPerivascular, 50, 'b', 'fille
 % Customize the plot
 xlabel('Number of Events');
 ylabel('Max dFF');
-title('Correlation between Max dFF and Rising Time');
+%title('Correlation between Max dFF and Rising Time');
 legend({['Perivascular (corr: ', num2str(corr_perivascular(1,2)), ')'], ['NonPerivascular (corr: ', num2str(corr_nonPerivascular(1,2)), ')']});
 grid on;
 hold off;
+
+%% Correlation between max_dFF and area
+
+% Calculate correlation coefficients
+corr_perivascular = corrcoef(area_perivascular, max_dFF_perivascular);
+corr_nonPerivascular = corrcoef(area_nonPerivascular, max_dFF_nonPerivascular);
+
+% Plot correlation with different colors for each group
+figure;
+hold on;
+scatter(area_perivascular, max_dFF_perivascular, 50, 'r', 'filled'); % Group 1 in blue
+scatter(area_nonPerivascular, max_dFF_nonPerivascular, 50, 'b', 'filled'); % Group 2 in red
+
+% Customize the plot
+xlabel('Area');
+ylabel('Max dFF');
+%title('Correlation between Max dFF and Rising Time');
+legend({['Perivascular (corr: ', num2str(corr_perivascular(1,2)), ')'], ['NonPerivascular (corr: ', num2str(corr_nonPerivascular(1,2)), ')']});
+grid on;
+hold off;
+
+%% Correlation between max_dFF and circularity
+
+% Calculate correlation coefficients
+corr_perivascular = corrcoef(circularity_perivascular, max_dFF_perivascular);
+corr_nonPerivascular = corrcoef(circularity_nonPerivascular, max_dFF_nonPerivascular);
+
+% Plot correlation with different colors for each group
+figure;
+hold on;
+scatter(circularity_perivascular, max_dFF_perivascular, 50, 'r', 'filled'); % Group 1 in blue
+scatter(circularity_nonPerivascular, max_dFF_nonPerivascular, 50, 'b', 'filled'); % Group 2 in red
+
+% Customize the plot
+xlabel('Circularity');
+ylabel('Max dFF');
+%title('Correlation between Max dFF and Rising Time');
+legend({['Perivascular (corr: ', num2str(corr_perivascular(1,2)), ')'], ['NonPerivascular (corr: ', num2str(corr_nonPerivascular(1,2)), ')']});
+grid on;
+hold off;
+
+%% Correlation between perimeter and area
+
+% Extract data from the table
+perimeter = combinedTable{:,3};
+perimeter_perivascular = perimeter(perivascular_indices); % Data points belonging to group 0
+perimeter_nonPerivascular = perimeter(nonPerivascular_indices); % Data points belonging to group 2
+
+% Calculate correlation coefficients
+corr_perivascular = corrcoef(perimeter_perivascular, area_perivascular);
+corr_nonPerivascular = corrcoef(perimeter_nonPerivascular, area_nonPerivascular);
+
+% Plot correlation with different colors for each group
+figure;
+hold on;
+scatter(perimeter_perivascular, area_perivascular, 50, 'r', 'filled'); % Group 1 in blue
+scatter(perimeter_nonPerivascular, area_nonPerivascular, 50, 'b', 'filled'); % Group 2 in red
+
+% Customize the plot
+xlabel('Perimeter');
+ylabel('Area');
+%title('Correlation between Max dFF and Rising Time');
+legend({['Perivascular (corr: ', num2str(corr_perivascular(1,2)), ')'], ['NonPerivascular (corr: ', num2str(corr_nonPerivascular(1,2)), ')']});
+grid on;
+hold off;
+
+%% Correlation between area and number of events
+
+% Calculate correlation coefficients
+corr_perivascular = corrcoef(area_perivascular, numberOfEvents_perivascular);
+corr_nonPerivascular = corrcoef(area_nonPerivascular, numberOfEvents_nonPerivascular);
+
+% Plot correlation with different colors for each group
+figure;
+hold on;
+scatter(area_perivascular, numberOfEvents_perivascular, 50, 'r', 'filled'); % Group 1 in blue
+scatter(area_nonPerivascular, numberOfEvents_nonPerivascular, 50, 'b', 'filled'); % Group 2 in red
+
+% Customize the plot
+xlabel('Area');
+ylabel('Number of Events');
+%title('Correlation between Max dFF and Rising Time');
+legend({['Perivascular (corr: ', num2str(corr_perivascular(1,2)), ')'], ['NonPerivascular (corr: ', num2str(corr_nonPerivascular(1,2)), ')']});
+grid on;
+hold off;
+
+%% dFF waves
+
+for perivascularCell = 1:size(rowsWithValue0,1)
+    figure;
+    dFF_graph = rowsWithValue0.dFF{perivascularCell,1};
+    plot(dFF_graph);
+    title(rowsWithValue0.fileNameColumn(perivascularCell), 'Interpreter','none');
+    ylabel(rowsWithValue0.('Cell ID')(perivascularCell));
+end
