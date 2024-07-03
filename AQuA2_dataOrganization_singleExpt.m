@@ -8,7 +8,7 @@ clear all;
 clc;
 
 spreadsheetPath = 'R:\Levy Lab\2photon\ImagingDatasets_Simone.xlsx';
-sheet = 'MacrophageBaseline';
+sheet = 'MacrophageBaseline_thinBone';
 dataTable = readcell(spreadsheetPath, 'sheet',sheet);  
 colNames = dataTable(1,:); %remove all info and leave just column names
 dataTable(1,:) = []; %remove column names
@@ -23,7 +23,7 @@ dataCol = struct( ...
 dataTable(:,dataCol.date) = cellfun(@num2str, dataTable(:,dataCol.date), 'UniformOutput',false); 
 
 % --- Specify the row number of interest
-rowOfInterest = 35; 
+rowOfInterest = 11; 
 
 % Extract information from the specified row
 mouse = dataTable{rowOfInterest, dataCol.mouse};
