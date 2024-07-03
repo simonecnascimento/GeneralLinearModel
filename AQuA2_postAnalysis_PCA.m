@@ -1,7 +1,7 @@
-%% PCA
+%% PCA (Principal Component Analysis)
 
 %Dimensionality Reduction: dataset is too complex
-[coeff, score, latent, ~, explained] = pca(dataAll);
+[coeff, score, latent, ~, explained] = pca(dataAll2);
 
 % %iteractive mapping
 % mapcaplot(dataAll, cellID_all);
@@ -45,17 +45,22 @@ for i = 1:num_rows
     end
 end
 
-%% Calculate Eigenvalues
+%%
+% Assuming you have already performed PCA and obtained the eigenvalues
+% stored in a variable called 'eigenvalues'
 
-% Compute eigenvalues
-eigenvalues = eig(corr_matrix);
+% Calculate the cumulative explained variance
+cumulative_variance = cumsum(latent);
+total_variance = sum(latent);
+explained_variance_ratio = cumulative_variance / total_variance;
 
-% Check if all eigenvalues are roughly of similar magnitude
-if std(eigenvalues) < threshold
-    disp('Data appears to be linear.');
-else
-    disp('Data may exhibit non-linear relationships.');
-end
+% Plot the scree plot
+figure;
+plot(1:numel(latent), explained_variance_ratio, 'bo-', 'LineWidth', 2);
+xlabel('Number of Components');
+ylabel('Explained Variance Ratio');
+title('Scree Plot');
+grid on;
 
 
 %% Coefficienct (loading) Matrix - Loadings - correlation between the original variables and the principal components
