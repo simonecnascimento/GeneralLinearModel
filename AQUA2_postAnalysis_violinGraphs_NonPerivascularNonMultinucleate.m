@@ -6,7 +6,7 @@ redLabel = combinedTableBigCells{:,14};
 multinucleated = combinedTableBigCells{:,17};
 
 % bigCell_indices = (multinucleated == 1);
-% notBigCell_indices = (multinucleated == 0);
+notBigCell_indices = (multinucleated == 0);
 NP_NM_red_indices = cellLocation == 2 & multinucleated == 0 & redLabel == 1;
 NP_NM_not_red_indices = cellLocation == 2 & multinucleated == 0 & redLabel == 0;
 %nonPerivascular_notBigCell_red_indices = cellLocation == 2 & multinucleated == 0 & redLabel == 1;
@@ -15,6 +15,7 @@ NP_NM_not_red_indices = cellLocation == 2 & multinucleated == 0 & redLabel == 0;
 %% Circularity Red vs Not red
 
 circularity = combinedTableBigCells{:,4};
+circularity_NP_NM = circularity(notBigCell_indices);
 circularity_NP_NM_red = circularity(NP_NM_red_indices);
 circularity_NP_NM_not_red = circularity(NP_NM_not_red_indices);
 
