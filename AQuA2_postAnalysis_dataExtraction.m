@@ -76,7 +76,6 @@ filesNamesAll = {
     'Pf4Ai162-11_230630_FOV4_run1_reg_Z01_green_Substack(1-927)_analysis.mat',...
     'Pf4Ai162-11_230630_FOV5_run1_reg_Z01_green_Substack(1-927)_analysis.mat',...
     'Pf4Ai162-11_230630_FOV6_run1_reg_Z01_green_Substack(1-927)_analysis.mat',...
-    'Pf4Ai162-11_230630_FOV7_run1_reg_Z01_green_Substack(1-927)_analysis.mat',...
     'Pf4Ai162-11_230630_FOV8_run1_reg_Z01_green_Substack(1-927)_analysis.mat',...
     'Pf4Ai162-11_230630_FOV9_run1_reg_Z01_green_Substack(1-927)_analysis.mat',...
     'Pf4Ai162-12_230717_FOV1_run1_reg_Z01_green_Substack(1-927)_analysis.mat',...
@@ -103,6 +102,7 @@ filesNamesAll = {
 %% Extract and combine resultData from each experiment
 
 fileNames = filesNamesAll;
+combinedTable = [];
 
 % Loop through each file
 for i = 1:length(fileNames)
@@ -132,30 +132,30 @@ combinedTable_sorted = sortrows(combinedTable, 'Number of Events', 'descend');
 
 %% Filter data by cell location
 
-varTypes = varfun(@class, combinedTable, 'OutputFormat', 'cell'); %check data types
+varTypes = varfun(@class, combinedTable_sorted, 'OutputFormat', 'cell'); %check data types
 
 %create table with all variables but cell ID and dFF
-dataAll = combinedTable{:, 2:11};
+dataAll = combinedTable_sorted{:, 2:14};
 dataAll_Zscore = zscore(dataAll);
+dataAll2 = combinedTable_sorted{:, [2:9,11:14]};
+
 
 % Separate cells by location
-cellLocation = combinedTable{:, 13};
+cellLocation = combinedTable_sorted{:, 13};
 
 logicalIndex0 = cellLocation == 0; %perivascular
-rowsWithValue0 = combinedTable(logicalIndex0, :);
+rowsWithValue0 = combinedTable_sorted(logicalIndex0, :);
 dataPerivascular = rowsWithValue0{:, 2:14};
 
 logicalIndex2 = cellLocation == 2; %non-perivascular
-rowsWithValue2 = combinedTable(logicalIndex2, :);
+rowsWithValue2 = combinedTable_sorted(logicalIndex2, :);
 dataNonPerivascular = rowsWithValue2{:, 2:14};
 
 %% Renumber cells in combinedTable to simplify cell identification
 
 %create cellID to substitute cell numbers
-cellID_all = (1:591)';
+cellID_all = (1:544)';
 cellID_all = num2cell(cellID_all);
-cellID = combinedTable{:, 1};
+cellID = combinedTable_sorted{:, 1};
 cellID_combined = [cellID_all, cellID];
 cellID_combinedTable = cell2table(cellID_combined);
-
-
