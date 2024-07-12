@@ -3,3 +3,4 @@ circularity = res_dbg.featureTable1{6,:};
 %found in circularityAll
 circularityAll = num2cell(circularityAll);
 histogram(cell2mat(circularityAll));
+

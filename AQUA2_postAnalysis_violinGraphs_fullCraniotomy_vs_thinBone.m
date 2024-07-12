@@ -1,22 +1,25 @@
 %% Data analysis fullCraniotomy(NP+NM) vs thinBone(all)
 
 %for fullCraniotomy data - load spreadsheet and add Var3
-load('D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\AQuA2_data_fullCraniotomy.mat')
-load('D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\multinucleated cells\multinucleatedCells.mat');
+load('V:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\AQuA2_data_fullCraniotomy.mat')
+load('V:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\multinucleated cells\multinucleatedCells.mat');
 fullCraniotomy_combinedTable = addvars(combinedTable, multinucleatedCells.Var3, 'NewVariableNames', 'Multinucleated');
 fullCraniotomy_multinucleated = fullCraniotomy_combinedTable{:,17};
 fullCraniotomy_cellLocation = fullCraniotomy_combinedTable{:,13};
 fullCraniotomy_NP_NM_indices = (fullCraniotomy_cellLocation == 2 & fullCraniotomy_multinucleated == 0);
 fullCraniotomy_numOnes = sum(fullCraniotomy_NP_NM_indices);
 
+combinedTable2 = combinedTable(fullCraniotomy_NP_NM_indices,:);
+
 %for thinBone data - create a new table 'multinucleatedCells' and add Var1
-load('D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\thinBone\AQuA2_data_thinBone.mat')
+load('V:\2photon\Simone\Simone_Macrophages\AQuA2_Results\thinBone\AQuA2_data_thinBone.mat')
 thinBone_multinucleated = array2table(zeros(94,1));
 thinBone_combinedTable = addvars(combinedTable, thinBone_multinucleated.Var1, 'NewVariableNames', 'Multinucleated');
 thinBone_cellLocation = thinBone_combinedTable{:,13};
 thinBone_NP_NM_indices = (thinBone_cellLocation == 2);
 thinBone_numOnes = sum(thinBone_NP_NM_indices);
 
+combinedTable_thinBone = combinedTable(thinBone_NP_NM_indices,:);
 
 
 %% Circularity 
