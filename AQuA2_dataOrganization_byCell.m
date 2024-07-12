@@ -97,12 +97,12 @@ for s = 1:numel(contents)
             % Add a title to each subplot
             title(['Cell ', num2str(cellIndex)]);
         end
-        Save CFU map figure
+        %Save CFU map figure
         saveas(cells, fullfile(outputDirFOV,strcat(fileTemp,"_combined_cells_figure_complete.png")));
         saveas(cells, fullfile(outputDirAnimal,strcat(fileTemp,"_combined_cells_figure_complete.png")));
 
-        Create a table (finalResults) with final results of all cells and median of features
-        Features to remove 
+        % Create a table (finalResults) with final results of all cells and median of features
+        % Features to remove 
         featuresIndicesToDelete = [1,3,7,15:24];
         
         %Get metadata results of ALL events
