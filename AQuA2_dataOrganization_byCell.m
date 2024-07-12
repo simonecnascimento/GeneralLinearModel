@@ -97,27 +97,27 @@ for s = 1:numel(contents)
             % Add a title to each subplot
             title(['Cell ', num2str(cellIndex)]);
         end
-        % Save CFU map figure
-        %saveas(cells, fullfile(outputDirFOV,strcat(fileTemp,"_combined_cells_figure_complete.png")));
-        %saveas(cells, fullfile(outputDirAnimal,strcat(fileTemp,"_combined_cells_figure_complete.png")));
+        Save CFU map figure
+        saveas(cells, fullfile(outputDirFOV,strcat(fileTemp,"_combined_cells_figure_complete.png")));
+        saveas(cells, fullfile(outputDirAnimal,strcat(fileTemp,"_combined_cells_figure_complete.png")));
 
-        % Create a table (finalResults) with final results of all cells and median of features
-        %Features to remove 
-        %featuresIndicesToDelete = [1,3,7,15:24];
+        Create a table (finalResults) with final results of all cells and median of features
+        Features to remove 
+        featuresIndicesToDelete = [1,3,7,15:24];
         
         %Get metadata results of ALL events
         resultsRaw = AQuA2_Feature.res.featureTable1;
         resultsExpanded = cell2table(resultsRaw.ftsTb); %expanded events without features column
-        %resultsExpanded(featuresIndicesToDelete,:) = [];
+        resultsExpanded(featuresIndicesToDelete,:) = [];
         
         %Create a resultsFinal table of features
         results = resultsRaw; %copy of metadata results table
         results.ftsTb = []; %assign empty values
-        %results(featuresIndicesToDelete,:) = []; %remove features
+        results(featuresIndicesToDelete,:) = []; %remove features
 
         %Add new features to resultsFinal table    
         existingRowNames = results.Properties.RowNames; % Getting the existing row names
-        newRowNames = {'Number of Events'; 'Cell location (0,perivascular;1,adjacent;2,none)'; 'Red label'; 'dFF', 'Propagation speed'};
+        newRowNames = {'Number of Events'; 'Cell location (0,perivascular;1,adjacent;2,none)'; 'Red label'; 'dFF'};
         updatedRowNames = [existingRowNames; newRowNames];
         newRowsData = zeros(4, width(results));   % Adding new rows to the table (e.g., with zeros)
         results = [results; array2table(newRowsData, 'VariableNames', results.Properties.VariableNames)];
