@@ -31,14 +31,16 @@ for i = 1:length(propagationDistance)
     speedEvent{i} = propagationDistance{i} / duration50to50{i};
 end
 
-
-%% circularity
-
-
+% save
+newFilename = strcat(filename, '_propagationSpeed.mat');
+save(newFilename);
 
 %% network
 
+% extract network - spatial density (number of events co-occured with current event)
+network = resultsRaw.ftsTb(24,:)';
 
-%% save
-newFilename = strcat(filename, '_propagationSpeed.mat');
+% save 
+newFilename = strcat(filename, '_analysisByEvent.mat');
 save(newFilename);
+
