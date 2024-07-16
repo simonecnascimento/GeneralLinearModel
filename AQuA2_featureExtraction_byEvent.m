@@ -65,16 +65,16 @@ FilesAll = {
 'Pf4Ai162-9_230614_FOV4_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
 'Pf4Ai162-9_230614_FOV5_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat'};
 
-%% extract features
+%% extract propagation
 for i = 1:length(FilesAll)
+    
     % Load the .mat file
     data = load(FilesAll{i});
-
     features = data.resultsRaw.Row;
     
     % Extract feature from the structure (assuming variable names are consistent across files)
-    % Here, assuming the variable name is 'result' in each .mat file
     resultData = rows2vars(data.resultsExpanded);
+
     % Convert the table to an array
     resultArray = table2array(data.resultsExpanded);
     resultData = resultArray';
@@ -89,6 +89,43 @@ for i = 1:length(FilesAll)
     % Append resultData to combinedTable
     table = [table; propagationSpeed, propagationDistance, duration, table(fileNameColumn)];
 end
+
+%% extract network spatial density
+
+for i = 1:length(FilesAll)
+    
+    % Load the .mat file
+    data = load(FilesAll{i});
+    features = data.resultsRaw.Row;
+
+    % Load res file
+    fileTemp_parts = strsplit(fileTemp, '_');
+    aqua_directory = fullfile('D:\2photon\Simone\Simone_Macrophages\', ...
+        fileTemp_parts{1,1}, '\', ...
+        [fileTemp_parts{1,2} '_' fileTemp_parts{1,3}], '\AQuA2\', ...
+        [fileTemp_parts{1,1} '_' fileTemp_parts{1,2} '_' fileTemp_parts{1,3} '_run1_reg_Z01_green_Substack(1-927)']);
+    fileTemp = [data.filename '_AQuA2.mat'];
+
+    % load .mat file using fileTemp and aqua_directory
+    
+    % Extract feature from the structure (assuming variable names are consistent across files)
+    resultData = rows2vars(data.resultsExpanded);
+
+    networkData.nOccurSameTime = data.resultsRaw.ftsTb(24,:)';
+    network.nCccurSameTimeList = res.fts1.networkAll.occurSameTimeList(:);
+    networkData = [networkData, network_occurSameTimeList];
+    
+    % Convert the table to an array
+    resultArray = table2array(data.resultsExpanded);
+    resultData = resultArray';
+    
+    % Create a column with the filename
+    fileNameColumn = repelem(FilesAll(i), size(propagationSpeed, 1), 1); % Repeat filename for each row
+       
+    % Append resultData to combinedTable
+    table = [table; propagationSpeed, propagationDistance, duration, table(fileNameColumn)];
+end
+
 
 %%
 propagation_fullCraniotomy = propagationTable.Speed;
