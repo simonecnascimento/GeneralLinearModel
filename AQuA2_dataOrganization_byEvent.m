@@ -3,7 +3,7 @@
 % load aqua files (cfuInfo1 and res.featuresTable1)
 
 % define experiment name
-filename = 'Pf4Ai162-9_230614_FOV5_run1_reg_Z01_green_(Substack1-927)';
+filename = 'Pf4Ai162-18_240221_FOV1_run1_reg_Z01_green_Substack(1-927)';
 
 % transform struct to table
 resultsRaw = res.featureTable1;
@@ -43,4 +43,3 @@ network = resultsRaw.ftsTb(24,:)';
 % save 
 newFilename = strcat(filename, '_analysisByEvent.mat');
 save(newFilename);
-
