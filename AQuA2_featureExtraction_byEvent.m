@@ -1,5 +1,7 @@
 %% Load .mat files  (FULL CRANIOTOMY)
 
+clear all
+
 % Change you Current Folder - fullCraniotomy
 cd D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\_analysisByEvent.mat
 
@@ -41,7 +43,7 @@ FilesAll = {
 'Pf4Ai162-13_230719_FOV7_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
 'Pf4Ai162-13_230719_FOV8_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
 'Pf4Ai162-18_240221_FOV1_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-20_240229_FOV1_reg_green(Substack1-927)_analysisByEvent.mat'};
+'Pf4Ai162-20_240229_FOV1_reg_green_Substack(1-927)_analysisByEvent.mat'};
 
 %% Load .mat files  (THIN BONE)
 
@@ -90,47 +92,6 @@ for i = 1:length(FilesAll)
     table = [table; propagationSpeed, propagationDistance, duration, table(fileNameColumn)];
 end
 
-%% extract network spatial density
-
-for i = 1:length(FilesAll)
-    
-    % Load the .mat file
-    data = load(FilesAll{i});
-    features = data.resultsRaw.Row;
-
-    % Load res file
-    fileTemp_parts = strsplit(fileTemp, '_');
-    aqua_directory = fullfile('D:\2photon\Simone\Simone_Macrophages\', ...
-        fileTemp_parts{1,1}, '\', ...
-        [fileTemp_parts{1,2} '_' fileTemp_parts{1,3}], '\AQuA2\', ...
-        [fileTemp_parts{1,1} '_' fileTemp_parts{1,2} '_' fileTemp_parts{1,3} '_run1_reg_Z01_green_Substack(1-927)']);
-    fileTemp = [data.filename '_AQuA2.mat'];
-
-    % load .mat file using fileTemp and aqua_directory
-    
-    % Extract feature from the structure (assuming variable names are consistent across files)
-    resultData = rows2vars(data.resultsExpanded);
-
-    networkData.nOccurSameTime = data.resultsRaw.ftsTb(24,:)';
-    network.nCccurSameTimeList = res.fts1.networkAll.occurSameTimeList(:);
-    networkData = [networkData, network_occurSameTimeList];
-    
-    % Convert the table to an array
-    resultArray = table2array(data.resultsExpanded);
-    resultData = resultArray';
-    
-    % Create a column with the filename
-    fileNameColumn = repelem(FilesAll(i), size(propagationSpeed, 1), 1); % Repeat filename for each row
-       
-    % Append resultData to combinedTable
-    table = [table; propagationSpeed, propagationDistance, duration, table(fileNameColumn)];
-end
-
-
-%%
-propagation_fullCraniotomy = propagationTable.Speed;
-
-
 %% Outliers
 % Calculate the Z-score for the data
 zScores = zscore(propagationTable.Speed);
@@ -144,7 +105,7 @@ numOutliers = sum(outliersZscore);
 outliers_Speed = isoutlier(propagationTable.Speed);
 
 
-%% compare fullCraniotomy vs thinBone
+%% Propagation compare fullCraniotomy vs thinBone
 
 notOutliers_thinBone = outliersZscore==0;
 propagation_thinBone = propagationTable.Speed(notOutliers_thinBone);
@@ -162,3 +123,54 @@ xticks([1, 2]);
 xticklabels({'fullCraniotomy', 'thinBone'});
 
 min(propagation_thinBone)
+
+
+%% extract network spatial density
+
+for i = 25:length(FilesAll)
+    
+    % Load analysis .mat file
+    data_analysis = load(FilesAll{i});
+    features = data_analysis.resultsRaw.Row;
+    results_complete = data_analysis.resultsRaw.Variables;
+
+    % AQuA2 directory 
+    fileTemp_parts = strsplit(data_analysis.filename, '_');
+    aqua_directory = fullfile('D:\2photon\Simone\Simone_Macrophages\', ...
+        fileTemp_parts{1,1}, '\', ...
+        [fileTemp_parts{1,2} '_' fileTemp_parts{1,3}], '\AQuA2\', ...
+        [fileTemp_parts{1,1} '_' fileTemp_parts{1,2} '_' fileTemp_parts{1,3} '_run1_reg_Z01_green_Substack(1-927)']);
+    AquA_fileName = [data_analysis.filename '_AQuA2.mat'];
+
+%         fileTemp_parts = strsplit(data_analysis.filename, '_');
+%     aqua_directory = fullfile('D:\2photon\Simone\Simone_Macrophages\', ...
+%         fileTemp_parts{1,1}, '\', ...
+%         [fileTemp_parts{1,2} '_' fileTemp_parts{1,3}], '\AQuA2\', ...
+%         [fileTemp_parts{1,1} '_' fileTemp_parts{1,2} '_' fileTemp_parts{1,3} '_reg_green_Substack(1-927)']);
+%     AquA_fileName = [data_analysis.filename '_AQuA2.mat'];
+
+    % Load AQuA2.mat file 
+    fullFilePath = fullfile(aqua_directory, AquA_fileName);
+    data_aqua = load(fullFilePath);
+
+    % get network results
+    nOccurSameTimeCell = num2cell(data_aqua.res.fts1.networkAll.nOccurSameTime);
+    networkData = [nOccurSameTimeCell, data_aqua.res.fts1.networkAll.occurSameTimeList];
+    networkData = cell2table(networkData);
+    networkData.Properties.VariableNames = {'nOccurSameTime', 'occurSameTimeList'};
+      
+    % CFU directory
+    CFU_directory = fullfile('D:\2photon\Simone\Simone_Macrophages\', ...
+        fileTemp_parts{1,1}, '\', ...
+        [fileTemp_parts{1,2} '_' fileTemp_parts{1,3}], '\AQuA2\');
+    CFU_fileName = [data_analysis.filename '_AQuA_res_cfu.mat'];
+    
+    % Load CFU.mat file 
+    CFU_FilePath = fullfile(CFU_directory, CFU_fileName);
+    data_CFU = load(CFU_FilePath);
+
+    % save
+    fileTemp = extractBefore(AquA_fileName, "_AQuA2"); 
+    networkFilename = strcat(fileTemp, '_network.mat');
+    save(networkFilename);
+end
