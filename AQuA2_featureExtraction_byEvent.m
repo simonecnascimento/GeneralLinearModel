@@ -174,6 +174,14 @@ for experiment = 1:length(FilesAll)
 
     for currentEvent = 1:size(networkData,1)
         simultaneousEvents = networkData.occurSameTimeList{currentEvent};
+
+        if ismember(currentEvent, simultaneousEvents)
+            % Remove the current event from simultaneous events
+            simultaneousEvents(simultaneousEvents == currentEvent) = [];
+            % Update the networkData table with the modified list
+            networkData.occurSameTimeList{i} = simultaneousEvents;
+        end
+
         % Loop through each row in data_CFU.cfuInfo1
         for cellRow = 1:size(data_CFU.cfuInfo1, 1)
             % Extract the first column value and the list of simultaneous events
@@ -191,6 +199,9 @@ for experiment = 1:length(FilesAll)
     %add cellNumberList to networkData
     networkData = [networkData, cellNumberList];
     networkData.Properties.VariableNames(3) = "cellNumberList";
+
+
+    % remove event in occurSameTimeList from row
 
     % Convert eventToCellData to a map for easy lookup
     eventToCellMap = containers.Map('KeyType', 'double', 'ValueType', 'any');
@@ -226,16 +237,7 @@ for experiment = 1:length(FilesAll)
     end
     
     
-    % Convert eventToCellData to a map for easy lookup
-    eventToCellMap = containers.Map('KeyType', 'double', 'ValueType', 'any');
-    for e = 1:size(data_CFU.cfuInfo1, 1)
-        cellNumber = data_CFU.cfuInfo1{i, 1};
-        eventNumbers = data_CFU.cfuInfo1{i, 2};
-        for j = 1:length(eventNumbers)
-            eventToCellMap(eventNumbers(j)) = cellNumber;
-        end
-    end
-    
+      
     % Check if simultaneous events belong to the same cell
     results = cell(size(networkData, 1), 1);
     for c = 1:size(networkData, 1)
