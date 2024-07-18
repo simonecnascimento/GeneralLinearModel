@@ -127,10 +127,10 @@ min(propagation_thinBone)
 
 %% extract network spatial density
 
-for i = 25:length(FilesAll)
+for experiment = 1:length(FilesAll)
     
     % Load analysis .mat file
-    data_analysis = load(FilesAll{i});
+    data_analysis = load(FilesAll{experiment});
     features = data_analysis.resultsRaw.Row;
     results_complete = data_analysis.resultsRaw.Variables;
 
@@ -168,6 +168,107 @@ for i = 25:length(FilesAll)
     % Load CFU.mat file 
     CFU_FilePath = fullfile(CFU_directory, CFU_fileName);
     data_CFU = load(CFU_FilePath);
+
+    % add column for cell number 
+    cellNumberList = cell(height(networkData),1);
+
+    for currentEvent = 1:size(networkData,1)
+        simultaneousEvents = networkData.occurSameTimeList{currentEvent};
+        % Loop through each row in data_CFU.cfuInfo1
+        for cellRow = 1:size(data_CFU.cfuInfo1, 1)
+            % Extract the first column value and the list of simultaneous events
+            cellNumber = data_CFU.cfuInfo1{cellRow, 1};
+            cellEvents = data_CFU.cfuInfo1{cellRow, 2};
+            
+            % Check if the currentEvent is in the list of simultaneous events
+            if ismember(currentEvent, cellEvents)
+                cellNumberList{currentEvent,1} = cellNumber;
+                break;  % Exit the loop once we find the corresponding first column value
+            end
+        end
+    end
+
+    %add cellNumberList to networkData
+    networkData = [networkData, cellNumberList];
+    networkData.Properties.VariableNames(3) = "cellNumberList";
+
+    % Convert eventToCellData to a map for easy lookup
+    eventToCellMap = containers.Map('KeyType', 'double', 'ValueType', 'any');
+    for e = 1:size(data_CFU.cfuInfo1, 1)
+        cellNumber = data_CFU.cfuInfo1{e, 1};
+        eventNumbers = data_CFU.cfuInfo1{e, 2};
+        if ~iscell(eventNumbers)
+            eventNumbers = num2cell(eventNumbers);
+        end
+        for j = 1:length(eventNumbers)
+            eventToCellMap(eventNumbers{j}) = cellNumber;
+        end
+    end
+    
+    % Filter events that belong to the same cell as the specific event
+    filteredNetworkData = networkData;
+    for c = 1:size(networkData, 1)
+        specificEvent = c;  % Replace with the specific event index
+        if isKey(eventToCellMap, specificEvent)
+            specificCell = eventToCellMap(specificEvent);
+            simultaneousEvents = networkData{c, 2};
+            if ~iscell(simultaneousEvents)
+                simultaneousEvents = num2cell(simultaneousEvents);
+            end
+            
+            % Filter out events that belong to the same cell
+            filteredEvents = simultaneousEvents(~cellfun(@(x) isKey(eventToCellMap, x) && eventToCellMap(x) == specificCell, simultaneousEvents));
+            
+            % Update the filtered network data
+            filteredNetworkData{i, 2} = cell2mat(filteredEvents);
+            filteredNetworkData{i, 1} = length(filteredEvents);  % Update the count
+        end
+    end
+    
+    
+    % Convert eventToCellData to a map for easy lookup
+    eventToCellMap = containers.Map('KeyType', 'double', 'ValueType', 'any');
+    for e = 1:size(data_CFU.cfuInfo1, 1)
+        cellNumber = data_CFU.cfuInfo1{i, 1};
+        eventNumbers = data_CFU.cfuInfo1{i, 2};
+        for j = 1:length(eventNumbers)
+            eventToCellMap(eventNumbers(j)) = cellNumber;
+        end
+    end
+    
+    % Check if simultaneous events belong to the same cell
+    results = cell(size(networkData, 1), 1);
+    for c = 1:size(networkData, 1)
+        simultaneousEvents = networkData{i, 2};
+        if ~iscell(simultaneousEvents)
+            simultaneousEvents = num2cell(simultaneousEvents);
+        end
+        
+        % Check if all events are present in the map
+        eventsInMap = cellfun(@(x) isKey(eventToCellMap, x), simultaneousEvents);
+        
+        if all(eventsInMap)
+            cellNumbers = unique(cellfun(@(x) eventToCellMap(x), simultaneousEvents));
+            if length(cellNumbers) == 1
+                results{i} = sprintf('All events in group %d belong to cell %d', i, cellNumbers);
+            else
+                results{i} = sprintf('Events in group %d belong to different cells', i);
+            end
+        else
+            missingEvents = simultaneousEvents(~eventsInMap);
+            results{i} = sprintf('Group %d has events not in map: %s', i, num2str(cell2mat(missingEvents)));
+        end
+    end
+    
+    % Display the results
+    disp(results);
+
+
+
+
+
+
+
 
     % save
     fileTemp = extractBefore(AquA_fileName, "_AQuA2"); 
