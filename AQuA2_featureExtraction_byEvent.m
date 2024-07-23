@@ -178,21 +178,25 @@ for experiment = 1:length(FilesAll)
     CFU_FilePath = fullfile(CFU_directory, CFU_fileName);
     data_CFU = load(CFU_FilePath);
 
-    for currentEvent = 22:size(networkData,1)
+    for currentEvent = 1:size(networkData,1)
         simultaneousEvents = networkData.occurSameTimeList{currentEvent};
 
         if ismember(currentEvent, simultaneousEvents)
+
             % Remove the current event from simultaneous events
             simultaneousEvents(simultaneousEvents == currentEvent) = [];
+
             % Update the networkData table with the modified list
             networkData.occurSameTimeList_fromDifferentCell{currentEvent} = simultaneousEvents;
         end
 
         % Loop through each row in data_CFU.cfuInfo1
         for cellRow = 1:size(data_CFU.cfuInfo1, 1)
+
             % Extract the cell number and the list of cell events
             cellNumber = data_CFU.cfuInfo1{cellRow, 1};
             cellEvents = data_CFU.cfuInfo1{cellRow, 2};
+
             % Check if the currentEvent is in the list of cellEvents
             if ismember(currentEvent, cellEvents)
                 networkData.cellNumber{currentEvent,1} = cellNumber;
@@ -200,28 +204,46 @@ for experiment = 1:length(FilesAll)
             end
         end
         
-        for x = 1:size(simultaneousEvents,1)
+        % Initialize an array to store indices of simultaneousEvents to remove
+        indicesToRemove = [];
+
+        for x = 1:length(simultaneousEvents)
             simultaneousEvent = simultaneousEvents(x);
-            % Check if the simultaneous event is in the list of  is in the list of cellEvents
-            if ismember(simultaneousEvent, data_CFU.cfuInfo1{cellNumber,2}) %test ,cellEvents
-                % Remove the current event from simultaneous events and update from networkData table
-                networkData.occurSameTimeList_fromDifferentCell{currentEvent}(x) = [];
+    
+            % Check if the simultaneous event is in the list of cellEvents
+            if ismember(simultaneousEvent, data_CFU.cfuInfo1{cellNumber, 2})
+
+                % Add the index to the list of indices to remove
+                indicesToRemove = [indicesToRemove, x];
+            end
+    
+            % Find the cell of the specific event
+            rowIndex = find(cellfun(@(c) any(c == simultaneousEvent), data_CFU.cfuInfo1(:, 2)));
+            
+            if ~isempty(rowIndex)
+                if isempty(networkData.cellNumberList_network{currentEvent})
+                    networkData.cellNumberList_network{currentEvent} = rowIndex;
+                else
+                    networkData.cellNumberList_network{currentEvent} = [networkData.cellNumberList_network{currentEvent}, rowIndex];
+                end
             end
         end
+
+        % Remove the indices in reverse order to avoid out of range errors
+        for i = length(indicesToRemove):-1:1
+            networkData.occurSameTimeList_fromDifferentCell{currentEvent}(indicesToRemove(i)) = [];
+        end
+    
     end
 
-
-
-
-
-
-
 end
-
-
 
     % save
     fileTemp = extractBefore(AquA_fileName, "_AQuA2"); 
     networkFilename = strcat(fileTemp, '_network.mat');
     save(networkFilename);
-end
+
+
+
+
+   
