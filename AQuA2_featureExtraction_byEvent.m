@@ -157,7 +157,7 @@ for experiment = 1:length(FilesAll)
     nOccurSameTimeCell = num2cell(data_aqua.res.fts1.networkAll.nOccurSameTime);
     occurSameTimeList = data_aqua.res.fts1.networkAll.occurSameTimeList;
     % add column for cell number of that specific event
-    cellNumberList = cell(height(occurSameTimeList),1);
+    cellNumber = cell(height(occurSameTimeList),1);
     % add column for cell number of that specific event
     cellMap = cell(height(occurSameTimeList),1);
     % duplicate occurSameTimeList to later on remove events that belong to current cell
@@ -166,11 +166,15 @@ for experiment = 1:length(FilesAll)
     cellNumberList_network = cell(height(occurSameTimeList),1);
     % add column for maps of cells with simultaneous events
     cellMap_network = cell(height(occurSameTimeList),1);
+    % add column for cell number of that specific event
+    cellNumberList_all = cell(height(occurSameTimeList),1);
+    % add column for maps of cells with simultaneous events
+    cellMap_all = cell(height(occurSameTimeList),1);
 
     % create a table with network results
-    networkData = [nOccurSameTimeCell, occurSameTimeList, cellNumberList, cellMap, occurSameTimeList_fromDifferentCell,cellNumberList_network, cellMap_network];
+    networkData = [cellNumber, cellMap, nOccurSameTimeCell, occurSameTimeList, cellNumberList_all, cellMap_all, occurSameTimeList_fromDifferentCell, cellNumberList_network, cellMap_network];
     networkData = cell2table(networkData);
-    networkData.Properties.VariableNames = {'nOccurSameTime', 'occurSameTimeList','cellNumber', 'cellMap', 'occurSameTimeList_fromDifferentCell', 'cellNumberList_network', 'cellMap_network'};
+    networkData.Properties.VariableNames = {'cellNumber', 'cellMap', 'nOccurSameTime', 'occurSameTimeList', 'cellNumberList_all', 'cellMap_all', 'occurSameTimeList_fromDifferentCell', 'cellNumberList_network', 'cellMap_network'};
       
     % CFU directory
     CFU_directory = fullfile('D:\2photon\Simone\Simone_Macrophages\', ...
@@ -183,34 +187,45 @@ for experiment = 1:length(FilesAll)
     data_CFU = load(CFU_FilePath);
 
     for currentEvent = 1:size(networkData,1)
-        simultaneousEvents = networkData.occurSameTimeList{currentEvent};
 
-        if ismember(currentEvent, simultaneousEvents)
+        % Find the cell of the specific event
+        cellIndex = find(cellfun(@(c) any(c == currentEvent), data_CFU.cfuInfo1(:, 2)));
 
-            % Remove the current event from simultaneous events
-            simultaneousEvents(simultaneousEvents == currentEvent) = [];
-
-            % Update the networkData table with the modified list
-            networkData.occurSameTimeList_fromDifferentCell{currentEvent} = simultaneousEvents;
-        end
-
-        % Loop through each row in data_CFU.cfuInfo1
-        for cellRow = 1:size(data_CFU.cfuInfo1, 1)
-
-            % Extract the cell number and the list of cell events
-            cellNumber = data_CFU.cfuInfo1{cellRow, 1};
-            cellEvents = data_CFU.cfuInfo1{cellRow, 2};
-
-            % Check if the currentEvent is in the list of cellEvents
-            if ismember(currentEvent, cellEvents)
-                networkData.cellNumber{currentEvent,1} = cellNumber;
-                break;  % Exit the loop once we find the corresponding first column value
+        if ~isempty(cellIndex)
+            if isempty(networkData.cellNumber{currentEvent})
+                networkData.cellNumber{currentEvent} = cellIndex;
+            else
+                networkData.cellNumber{currentEvent} = [networkData.cellNumberList{currentEvent}, cellIndex];
             end
         end
 
         % Get map of the cell of currentEvent
-        networkData.cellMap{currentEvent}{end+1} = data_CFU.cfuInfo1{cellNumber, 3};
-        
+        networkData.cellMap{currentEvent}{end+1} = data_CFU.cfuInfo1{cellIndex, 3};
+
+        % Find list of simultaneous events
+        simultaneousEvents = networkData.occurSameTimeList{currentEvent};
+
+        if ismember(currentEvent, simultaneousEvents)
+            % Remove the current event from simultaneous events
+            simultaneousEvents(simultaneousEvents == currentEvent) = [];
+            % Update the networkData table with the modified list
+            networkData.occurSameTimeList_fromDifferentCell{currentEvent} = simultaneousEvents;
+        end
+
+%         % Loop through each row in data_CFU.cfuInfo1
+%         for cellRow = 1:size(data_CFU.cfuInfo1, 1)
+% 
+%             % Extract the cell number and the list of cell events
+%             cellNumber = data_CFU.cfuInfo1{cellRow, 1};
+%             cellEvents = data_CFU.cfuInfo1{cellRow, 2};
+% 
+%             % Check if the currentEvent is in the list of cellEvents
+%             if ismember(currentEvent, cellEvents)
+%                 networkData.cellNumberList_network{currentEvent,1} = cellNumber;
+%                 break;  % Exit the loop once we find the corresponding first column value
+%             end
+%         end
+       
         % Initialize an array to store indices of simultaneousEvents to remove
         indicesToRemove = [];
 
@@ -218,7 +233,7 @@ for experiment = 1:length(FilesAll)
             simultaneousEvent = simultaneousEvents(x);
     
             % Check if the simultaneous event is in the list of cellEvents
-            if ismember(simultaneousEvent, data_CFU.cfuInfo1{cellNumber, 2})
+            if ismember(simultaneousEvent, data_CFU.cfuInfo1{cellIndex, 2})
 
                 % Add the index to the list of indices to remove
                 indicesToRemove = [indicesToRemove, x];
