@@ -153,35 +153,38 @@ for experiment = 1:length(FilesAll)
     fullFilePath = fullfile(aqua_directory, AquA_fileName);
     data_aqua = load(fullFilePath);
 
+    % FILL TABLE WITH CELL NUMBERS, MAPS, AND EVENTS PROPAGATIONS
+
     % get network data from aqua
-    numberOfSimultanousEvents = num2cell(data_aqua.res.fts1.networkAll.nOccurSameTime);
+    nSimultanousEvents = num2cell(data_aqua.res.fts1.networkAll.nOccurSameTime);
     simultaneousEvents_all = data_aqua.res.fts1.networkAll.occurSameTimeList;
-    % add column for cell number of that specific event
-    cellNumber = cell(height(simultaneousEvents_all),1);
-    % add column for cell number of that specific event
-    cellMap = cell(height(simultaneousEvents_all),1);
-    % duplicate occurSameTimeList to later on remove events that belong to current cell
-    simultaneousEvents_fromDifferentCell = simultaneousEvents_all;
-    % add column for cell number of that specific event
-    cellNumber_network = cell(height(simultaneousEvents_all),1);
-    % add column for maps of cells with simultaneous events
-    cellMap_network = cell(height(simultaneousEvents_all),1);
-    % add column for cell number of that specific event
-    cellNumber_all = cell(height(simultaneousEvents_all),1);
-    % add column for maps of cells with simultaneous events
-    cellMap_all = cell(height(simultaneousEvents_all),1);
-    % add column for propagation map of event
+
+    % for current event
     propagationMap_event = cell(height(simultaneousEvents_all),1);
-    % add column for propagation map of simultaneous events
-    propagationMap_eventNetwork = cell(height(simultaneousEvents_all),1);
-    % add column for cellMap and network of simultaneous events
-    propagationMap_eventNetwork = cell(height(simultaneousEvents_all),1);
+    % for cell corresponding the current event
+    cellNumber = cell(height(simultaneousEvents_all),1);
+    cellMap = cell(height(simultaneousEvents_all),1);
+    
+    % for all simultaneous events
+    propagationMap_all = cell(height(simultaneousEvents_all),1);
+    % for cells corresponding the all simultaneous events
+    cellNumber_all = cell(height(simultaneousEvents_all),1);
+    cellMap_all = cell(height(simultaneousEvents_all),1);
+   
+    % for events removing current Event
+    simultaneousEvents_network = simultaneousEvents_all; %duplicate 
+    propagationMap_network = cell(height(simultaneousEvents_all),1);
+    % for cell corresponding to events in the network
+    cellNumber_network = cell(height(simultaneousEvents_all),1);
+    cellMap_network = cell(height(simultaneousEvents_all),1);
 
-
+    % combine propagation map of event to map of cell
+    currentEvent_eventNetwork_combined = cell(height(simultaneousEvents_all),1);
+   
     % create a table with network results
-    networkData = [propagationMap_event, cellNumber, cellMap, numberOfSimultanousEvents, simultaneousEvents_all, cellNumber_all, cellMap_all, simultaneousEvents_fromDifferentCell, propagationMap_eventNetwork, cellNumber_network, cellMap_network];
+    networkData = [propagationMap_event, cellNumber, cellMap, nSimultanousEvents, simultaneousEvents_all, propagationMap_all, cellNumber_all, cellMap_all, simultaneousEvents_network, propagationMap_network, cellNumber_network, cellMap_network, currentEvent_eventNetwork_combined];
     networkData = cell2table(networkData);
-    networkData.Properties.VariableNames = {'propagationMap_event','cellNumber', 'cellMap', 'numberOfSimultanousEvents', 'simultaneousEvents_all', 'cellNumber_all', 'cellMap_all', 'simultaneousEvents_fromDifferentCell', 'propagationMap_eventNetwork', 'cellNumber_network', 'cellMap_network'};
+    networkData.Properties.VariableNames = {'propagationMap_event','cellNumber', 'cellMap', 'nSimultanousEvents', 'simultaneousEvents_all', 'propagationMap_all', 'cellNumber_all', 'cellMap_all', 'simultaneousEvents_network', 'propagationMap_network', 'cellNumber_network', 'cellMap_network', 'currentEvent_eventNetwork_combined'};
       
     % CFU directory
     CFU_directory = fullfile('D:\2photon\Simone\Simone_Macrophages\', ...
@@ -196,61 +199,68 @@ for experiment = 1:length(FilesAll)
     for currentEvent = 1:size(networkData,1)
 
         % find the propagation matrix related to the current event
-        propagationMatrix = data_aqua.res.riseLst1{1, currentEvent}.dlyMap50;
-        networkData.propagationMap_event{currentEvent}{end+1} = propagationMatrix;
+        propagationMap = data_aqua.res.riseLst1{1, currentEvent}.dlyMap50;
+        networkData.propagationMap_event{currentEvent}{end+1} = propagationMap;
     
         % find the cell related to the current event
         cellIndex = find(cellfun(@(c) any(c == currentEvent), data_CFU.cfuInfo1(:, 2)));
         networkData.cellNumber{currentEvent} = cellIndex;
-
-%         if ~isempty(cellIndex)
-%             if isempty(networkData.cellNumber{currentEvent})
-%                 networkData.cellNumber{currentEvent} = cellIndex;
-%             else
-%                 networkData.cellNumber{currentEvent} = [networkData.cellNumberList{currentEvent}, cellIndex];
-%             end
-%         end
-% 
+ 
         % Get map of the cell of current event
         cellMap = data_CFU.cfuInfo1{cellIndex, 3};
         networkData.cellMap{currentEvent}{end+1} = cellMap;
 
-        % Find list of simultaneous events related to that event
-        simultaneousEvents = networkData.simultaneousEvents_all{currentEvent};
-
-        % Remove the current event from simultaneous events
-        simultaneousEvents(simultaneousEvents == currentEvent) = [];
-        % Update the networkData table with the modified list
-        networkData.simultaneousEvents_fromDifferentCell{currentEvent} = simultaneousEvents;
+        % Find list of all simultaneous events related to that event
+        simultaneousEvents_all = networkData.simultaneousEvents_all{currentEvent};
         
-%         % Loop through each row in data_CFU.cfuInfo1
-%         for cellRow = 1:size(data_CFU.cfuInfo1, 1)
-% 
-%             % Extract the cell number and the list of cell events
-%             cellNumber = data_CFU.cfuInfo1{cellRow, 1};
-%             cellEvents = data_CFU.cfuInfo1{cellRow, 2};
-% 
-%             % Check if the currentEvent is in the list of cellEvents
-%             if ismember(currentEvent, cellEvents)
-%                 networkData.cellNumberList_network{currentEvent,1} = cellNumber;
-%                 break;  % Exit the loop once we find the corresponding first column value
-%             end
-%         end
-       
+        for a = 1:length(simultaneousEvents_all)
+            simultaneousEvent_all = simultaneousEvents_all(a);
+
+            % find the propagation matrix related to the simultaneous event
+            propagationMap_all = data_aqua.res.riseLst1{1, simultaneousEvent_all}.dlyMap50;
+            networkData.propagationMap_all{currentEvent}{end+1} = propagationMap_all;
+            
+            % Find the cell of the specific event
+            cellIndex_all = find(cellfun(@(c) any(c == simultaneousEvent_all), data_CFU.cfuInfo1(:, 2)));
+
+            if ~isempty(cellIndex_all)
+                if isempty(networkData.cellNumber_all{currentEvent})
+                    networkData.cellNumber_all{currentEvent} = cellIndex_all;
+                else
+                    networkData.cellNumber_all{currentEvent} = [networkData.cellNumber_all{currentEvent}, cellIndex_all];
+                end
+            end
+
+            % Find the map of the simultaneousEvent to the cell array
+            cellMap_all = data_CFU.cfuInfo1{cellIndex_all, 3};
+            networkData.cellMap_all{currentEvent}{end+1} = cellMap_all;      
+        end
+
+        % Duplicate all events and Remove the current event from all simultaneous events
+        simultaneousEvents_network = simultaneousEvents_all; %duplicate 
+        simultaneousEvents_network(simultaneousEvents_all == currentEvent) = [];
+        % Update the networkData table with the modified list
+        networkData.simultaneousEvents_network{currentEvent} = simultaneousEvents_network;
+          
         % Initialize an array to store indices of simultaneousEvents to remove
         indicesToRemove = [];
 
-        for x = 1:length(simultaneousEvents)
-            simultaneousEvent = simultaneousEvents(x);
+        %remove current event from network events
+        for b = 1:length(simultaneousEvents_network)
+            simultaneousEvent_network = simultaneousEvents_network(b);
     
             % Check if the simultaneous event is in the list of cellEvents
-            if ismember(simultaneousEvent, data_CFU.cfuInfo1{cellIndex, 2})
+            if ismember(simultaneousEvent_network, data_CFU.cfuInfo1{cellIndex, 2})
                 % Add the index to the list of indices to remove
-                indicesToRemove = [indicesToRemove, x];
+                indicesToRemove = [indicesToRemove, b];
             end
-    
+
+            % find the propagation matrix related to the current event
+            propagationMap_network = data_aqua.res.riseLst1{1, simultaneousEvent_network}.dlyMap50;
+            networkData.propagationMap_network{currentEvent}{end+1} = propagationMap_network;
+
             % Find the cell of the specific event
-            cellIndex_network = find(cellfun(@(c) any(c == simultaneousEvent), data_CFU.cfuInfo1(:, 2)));
+            cellIndex_network = find(cellfun(@(c) any(c == simultaneousEvent_network), data_CFU.cfuInfo1(:, 2)));
 
             if ~isempty(cellIndex_network)
                 if isempty(networkData.cellNumber_network{currentEvent})
@@ -266,10 +276,6 @@ for experiment = 1:length(FilesAll)
                 networkData.cellMap_network{currentEvent} = {};
             end
 
-            % find the propagation matrix related to the current event
-            propagationMatrix_network = data_aqua.res.riseLst1{1, simultaneousEvent}.dlyMap50;
-            networkData.propagationMap_eventNetwork{currentEvent}{end+1} = propagationMatrix_network;
-
             % Find the map of the simultaneousEvent to the cell array
             cellMap_network = data_CFU.cfuInfo1{cellIndex_network, 3};
             networkData.cellMap_network{currentEvent}{end+1} = cellMap_network;
@@ -277,7 +283,7 @@ for experiment = 1:length(FilesAll)
         
         % Remove the indices in reverse order to avoid out of range errors
         for i = length(indicesToRemove):-1:1
-            networkData.simultaneousEvents_fromDifferentCell{currentEvent}(indicesToRemove(i)) = [];
+            networkData.simultaneousEvents_network{currentEvent}(indicesToRemove(i)) = [];
         end
  
     end
