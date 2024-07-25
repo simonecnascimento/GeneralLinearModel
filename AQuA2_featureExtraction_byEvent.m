@@ -154,27 +154,31 @@ for experiment = 1:length(FilesAll)
     data_aqua = load(fullFilePath);
 
     % get network data from aqua
-    nOccurSameTimeCell = num2cell(data_aqua.res.fts1.networkAll.nOccurSameTime);
-    occurSameTimeList = data_aqua.res.fts1.networkAll.occurSameTimeList;
+    numberOfSimultanousEvents = num2cell(data_aqua.res.fts1.networkAll.nOccurSameTime);
+    simultaneousEvents_all = data_aqua.res.fts1.networkAll.occurSameTimeList;
     % add column for cell number of that specific event
-    cellNumber = cell(height(occurSameTimeList),1);
+    cellNumber = cell(height(simultaneousEvents_all),1);
     % add column for cell number of that specific event
-    cellMap = cell(height(occurSameTimeList),1);
+    cellMap = cell(height(simultaneousEvents_all),1);
     % duplicate occurSameTimeList to later on remove events that belong to current cell
-    occurSameTimeList_fromDifferentCell = occurSameTimeList;
+    simultaneousEvents_fromDifferentCell = simultaneousEvents_all;
     % add column for cell number of that specific event
-    cellNumberList_network = cell(height(occurSameTimeList),1);
+    cellNumber_network = cell(height(simultaneousEvents_all),1);
     % add column for maps of cells with simultaneous events
-    cellMap_network = cell(height(occurSameTimeList),1);
+    cellMap_network = cell(height(simultaneousEvents_all),1);
     % add column for cell number of that specific event
-    cellNumberList_all = cell(height(occurSameTimeList),1);
+    cellNumberList_all = cell(height(simultaneousEvents_all),1);
     % add column for maps of cells with simultaneous events
-    cellMap_all = cell(height(occurSameTimeList),1);
+    cellMap_all = cell(height(simultaneousEvents_all),1);
+    % add column for propagation map of event
+    propagationMap_event = cell(height(simultaneousEvents_all),1);
+     % add column for propagation map of simultaneous events
+    propagationMap_eventNetwork = cell(height(simultaneousEvents_all),1);
 
     % create a table with network results
-    networkData = [cellNumber, cellMap, nOccurSameTimeCell, occurSameTimeList, cellNumberList_all, cellMap_all, occurSameTimeList_fromDifferentCell, cellNumberList_network, cellMap_network];
+    networkData = [propagationMap_event, cellNumber, cellMap, numberOfSimultanousEvents, simultaneousEvents_all, cellNumberList_all, cellMap_all, simultaneousEvents_fromDifferentCell, propagationMap_eventNetwork, cellNumber_network, cellMap_network];
     networkData = cell2table(networkData);
-    networkData.Properties.VariableNames = {'cellNumber', 'cellMap', 'nOccurSameTime', 'occurSameTimeList', 'cellNumberList_all', 'cellMap_all', 'occurSameTimeList_fromDifferentCell', 'cellNumberList_network', 'cellMap_network'};
+    networkData.Properties.VariableNames = {'propagationMap_event','cellNumber', 'cellMap', 'nOccurSameTime', 'simultaneousEvents_all', 'cellNumberList_all', 'cellMap_all', 'simultaneousEvents_fromDifferentCell', 'propagationMap_eventNetwork', 'cellNumberList_network', 'cellMap_network'};
       
     % CFU directory
     CFU_directory = fullfile('D:\2photon\Simone\Simone_Macrophages\', ...
@@ -187,6 +191,37 @@ for experiment = 1:length(FilesAll)
     data_CFU = load(CFU_FilePath);
 
     for currentEvent = 1:size(networkData,1)
+
+        % find propagation map of that specific event
+        imagesc(data_aqua.res.riseLst1{1, currentEvent}.dlyMap50)
+    
+        %propagation matrix
+        propagationMatrix = data_aqua.res.riseLst1{1, currentEvent}.dlyMap50;
+        networkData.propagationMap_event{currentEvent}{end+1} = propagationMatrix;
+    
+        % Find the maximum value
+        maxValue = max(matrix(:));
+        % Find all positions of the maximum value
+        [maxRows, maxCols] = find(matrix == maxValue);
+        
+        % Find the minimum value
+        minValue = min(matrix(:));
+        % Find all positions of the minimum value
+        [minRows, minCols] = find(matrix == minValue);
+        
+        % Display the results for maximum value
+        disp(['Maximum value: ', num2str(maxValue)]);
+        disp('Positions of max value:');
+        for j = 1:length(maxRows)
+            disp(['(', num2str(maxRows(j)), ', ', num2str(maxCols(j)), ')']);
+        end
+        
+        % Display the results for minimum value
+        disp(['Minimum value: ', num2str(minValue)]);
+        disp('Positions of min value:');
+        for j = 1:length(minRows)
+            disp(['(', num2str(minRows(j)), ', ', num2str(minCols(j)), ')']);
+        end
 
         % Find the cell of the specific event
         cellIndex = find(cellfun(@(c) any(c == currentEvent), data_CFU.cfuInfo1(:, 2)));
