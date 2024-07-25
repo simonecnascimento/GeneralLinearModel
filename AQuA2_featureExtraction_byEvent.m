@@ -179,12 +179,12 @@ for experiment = 1:length(FilesAll)
     cellMap_network = cell(height(simultaneousEvents_all),1);
 
     % combine propagation map of event to map of cell
-    currentEvent_eventNetwork_combined = cell(height(simultaneousEvents_all),1);
+    eventNetwork_cellMap_all = cell(height(simultaneousEvents_all),1);
    
     % create a table with network results
-    networkData = [propagationMap_event, cellNumber, cellMap, nSimultanousEvents, simultaneousEvents_all, propagationMap_all, cellNumber_all, cellMap_all, simultaneousEvents_network, propagationMap_network, cellNumber_network, cellMap_network, currentEvent_eventNetwork_combined];
+    networkData = [propagationMap_event, cellNumber, cellMap, nSimultanousEvents, simultaneousEvents_all, propagationMap_all, cellNumber_all, cellMap_all, eventNetwork_cellMap_all, simultaneousEvents_network, propagationMap_network, cellNumber_network, cellMap_network];
     networkData = cell2table(networkData);
-    networkData.Properties.VariableNames = {'propagationMap_event','cellNumber', 'cellMap', 'nSimultanousEvents', 'simultaneousEvents_all', 'propagationMap_all', 'cellNumber_all', 'cellMap_all', 'simultaneousEvents_network', 'propagationMap_network', 'cellNumber_network', 'cellMap_network', 'currentEvent_eventNetwork_combined'};
+    networkData.Properties.VariableNames = {'propagationMap_event','cellNumber', 'cellMap', 'nSimultanousEvents', 'simultaneousEvents_all', 'propagationMap_all', 'cellNumber_all', 'cellMap_all', 'eventNetwork_cellMap_all', 'simultaneousEvents_network', 'propagationMap_network', 'cellNumber_network', 'cellMap_network'};
       
     % CFU directory
     CFU_directory = fullfile('D:\2photon\Simone\Simone_Macrophages\', ...
@@ -233,7 +233,71 @@ for experiment = 1:length(FilesAll)
 
             % Find the map of the simultaneousEvent to the cell array
             cellMap_all = data_CFU.cfuInfo1{cellIndex_all, 3};
-            networkData.cellMap_all{currentEvent}{end+1} = cellMap_all;      
+            networkData.cellMap_all{currentEvent}{end+1} = cellMap_all;  
+
+            % eventNetwork_cellMap_all
+   
+%             % Cell Map
+%             tempMap = networkData.cellMap_all{currentEvent}{simultaneousEvent_all};
+%             nonZeroMask = tempMap > 0;
+%             countTempMap = nnz((tempMap));
+%             imshow(nonZeroMask);
+%             
+%             % Event Propagation
+%             tempPropagation = networkData.propagationMap_all{currentEvent}{simultaneousEvent_all};  
+%             countTempPropagation = nnz(~isnan(tempPropagation));
+%             
+%             % Get the linear indices of non-zero elements in temp
+%             nonZeroIndicesTempMap = find(tempMap ~= 0);
+%             
+%             % Get the linear indices of non-NaN elements in matrix
+%             nonNaNIndicesTempPropagation = find(~isnan(tempPropagation));
+%             
+%             % Ensure both have the same number of elements
+%             if length(nonZeroIndicesTempMap) ~= length(nonNaNIndicesTempPropagation)
+%                 error('The number of non-zero elements in temp must equal the number of non-NaN elements in matrix.');
+%             end
+%             
+%             % Create a new variable to hold the result
+%             newTempMap = tempMap;
+%             
+%             % Insert the values from matrix into the newTemp at the corresponding positions
+%             newTempMap(nonZeroIndicesTempMap) = tempPropagation(nonNaNIndicesTempPropagation);
+%             
+%             
+%             % Replace all zeros with NaN in temp
+%             newTempMap(newTempMap == 0) = NaN;
+% 
+%             % Substitute networkData table
+%             networkData.eventNetwork_cellMap_all{currentEvent}{end+1} = newTempMap; 
+            
+%             % Plot image of eventNetwork_cellMap_all
+%             imagesc(newTempMap)
+%             matrixTemp = newTempMap;
+%             
+%             % Find the maximum value
+%             maxValue = max(matrixTemp(:));
+%             % Find all positions of the maximum value
+%             [maxRows, maxCols] = find(matrixTemp == maxValue);
+%             
+%             % Find the minimum value
+%             minValue = min(matrixTemp(:));
+%             % Find all positions of the minimum value
+%             [minRows, minCols] = find(matrixTemp == minValue);
+%             
+%             % Display the results for maximum value
+%             disp(['Maximum value: ', num2str(maxValue)]);
+%             disp('Positions of max value:');
+%             for j = 1:length(maxRows)
+%                 disp(['(', num2str(maxRows(j)), ', ', num2str(maxCols(j)), ')']);
+%             end
+%             
+%             % Display the results for minimum value
+%             disp(['Minimum value: ', num2str(minValue)]);
+%             disp('Positions of min value:');
+%             for j = 1:length(minRows)
+%                 disp(['(', num2str(minRows(j)), ', ', num2str(minCols(j)), ')']);
+%             end
         end
 
         % Duplicate all events and Remove the current event from all simultaneous events
