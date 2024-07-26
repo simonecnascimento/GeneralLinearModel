@@ -159,33 +159,43 @@ for experiment = 1:length(FilesAll)
     nSimultanousEvents = num2cell(data_aqua.res.fts1.networkAll.nOccurSameTime);
     simultaneousEvents_all = data_aqua.res.fts1.networkAll.occurSameTimeList;
 
+    % Define the number of events
+    numEvents = height(simultaneousEvents_all);
+
     % for current event
-    propagationMap_event = cell(height(simultaneousEvents_all),1);
+    propagationMap_event = cell(numEvents,1);
     % for cell corresponding the current event
-    cellNumber = cell(height(simultaneousEvents_all),1);
-    cellMap = cell(height(simultaneousEvents_all),1);
+    cellNumber = cell(numEvents,1);
+    cellMap = cell(numEvents,1);
     
     % for all simultaneous events
-    propagationMap_all = cell(height(simultaneousEvents_all),1);
+    propagationMap_all = cell(numEvents,1);
     % for cells corresponding the all simultaneous events
-    cellNumber_all = cell(height(simultaneousEvents_all),1);
-    cellMap_all = cell(height(simultaneousEvents_all),1);
+    cellNumber_all = cell(numEvents,1);
+    cellMap_all = cell(numEvents,1);
    
     % for events removing current Event
     simultaneousEvents_network = simultaneousEvents_all; %duplicate 
-    propagationMap_network = cell(height(simultaneousEvents_all),1);
+    propagationMap_network = cell(numEvents,1);
     % for cell corresponding to events in the network
-    cellNumber_network = cell(height(simultaneousEvents_all),1);
-    cellMap_network = cell(height(simultaneousEvents_all),1);
+    cellNumber_network = cell(numEvents,1);
+    cellMap_network = cell(numEvents,1);
 
     % combine propagation map of event to map of cell
-    eventNetwork_cellMap_all = cell(height(simultaneousEvents_all),1);
-   
+    eventNetwork_cellMap_all = cell(numEvents,1);
+    % calculate shortest distance between centers
+    shortestDistanceBetweenCenters = cell(numEvents,1);
+
     % create a table with network results
-    networkData = [propagationMap_event, cellNumber, cellMap, nSimultanousEvents, simultaneousEvents_all, propagationMap_all, cellNumber_all, cellMap_all, eventNetwork_cellMap_all, simultaneousEvents_network, propagationMap_network, cellNumber_network, cellMap_network];
+    networkData = [propagationMap_event, cellNumber, cellMap, nSimultanousEvents, simultaneousEvents_all, propagationMap_all, cellNumber_all, cellMap_all, eventNetwork_cellMap_all, shortestDistanceBetweenCenters, simultaneousEvents_network, propagationMap_network, cellNumber_network, cellMap_network];
     networkData = cell2table(networkData);
-    networkData.Properties.VariableNames = {'propagationMap_event','cellNumber', 'cellMap', 'nSimultanousEvents', 'simultaneousEvents_all', 'propagationMap_all', 'cellNumber_all', 'cellMap_all', 'eventNetwork_cellMap_all', 'simultaneousEvents_network', 'propagationMap_network', 'cellNumber_network', 'cellMap_network'};
+    networkData.Properties.VariableNames = {'propagationMap_event','cellNumber', 'cellMap', 'nSimultanousEvents', 'simultaneousEvents_all', 'propagationMap_all', 'cellNumber_all', 'cellMap_all', 'eventNetwork_cellMap_all', 'shortestDistanceBetweenCenters', 'simultaneousEvents_network', 'propagationMap_network', 'cellNumber_network', 'cellMap_network'};
       
+%     % Duplicate table to remove repetitive cells in the future
+%     networkData_cleaned = networkData;
+% %     cellNumbers = num2cell(networkData_cleaned{currentEvent, 'cellNumber_all'}{1}); % Assuming cellNumber_all is a cell array
+% %     cellMaps = networkData_cleaned{currentEvent, 'cellMap_all'}{1}; % cellMap_all might already be a cell array
+
     % CFU directory
     CFU_directory = fullfile('D:\2photon\Simone\Simone_Macrophages\', ...
         fileTemp_parts{1,1}, '\', ...
@@ -196,11 +206,11 @@ for experiment = 1:length(FilesAll)
     CFU_FilePath = fullfile(CFU_directory, CFU_fileName);
     data_CFU = load(CFU_FilePath);
 
-    for currentEvent = 1:size(networkData,1)
+    for currentEvent = 7:size(networkData,1)
 
         % find the propagation matrix related to the current event
         propagationMap = data_aqua.res.riseLst1{1, currentEvent}.dlyMap50;
-        networkData.propagationMap_event{currentEvent}{end+1} = propagationMap;
+        networkData.propagationMap_event{currentEvent} = propagationMap;
     
         % find the cell related to the current event
         cellIndex = find(cellfun(@(c) any(c == currentEvent), data_CFU.cfuInfo1(:, 2)));
@@ -208,7 +218,7 @@ for experiment = 1:length(FilesAll)
  
         % Get map of the cell of current event
         cellMap = data_CFU.cfuInfo1{cellIndex, 3};
-        networkData.cellMap{currentEvent}{end+1} = cellMap;
+        networkData.cellMap{currentEvent} = cellMap;
 
         % Find list of all simultaneous events related to that event
         simultaneousEvents_all = networkData.simultaneousEvents_all{currentEvent};
@@ -349,9 +359,56 @@ for experiment = 1:length(FilesAll)
         for i = length(indicesToRemove):-1:1
             networkData.simultaneousEvents_network{currentEvent}(indicesToRemove(i)) = [];
         end
- 
-    end
+
+        % COMBINE CELL MAPS
+    
+        cellNumbers = num2cell(networkData{currentEvent, 'cellNumber_all'}{1}); % Assuming cellNumber_all is a cell array
+        cellMaps = networkData{currentEvent, 'cellMap_all'}{1}; % cellMap_all might already be a cell array
+    
+        if iscell(cellNumbers)
+            % Flatten the cell array and find unique numbers
+            cellNumbers = [cellNumbers{:}];
+        end
+        
+        % Remove duplicates in cellNumbers
+        [uniqueCellNumbers, ia] = unique(cellNumbers, 'stable');
+        
+        % Extract corresponding cellMaps for unique cellNumbers
+        cleanedCellMaps = cellMaps(ia);
+    
+        % Update the cleaned table
+        networkData{currentEvent, 'cellNumber_all'} = {uniqueCellNumbers};
+        networkData{currentEvent, 'cellMap_all'}{:} = cleanedCellMaps;
+    
+        % Initialize the combined matrix with zeros
+        combinedMatrix = zeros(size(cleanedCellMaps{1}));
+    
+        % Loop over each cellMap and combine non-zero values
+        for k = 1:numel(cleanedCellMaps)
+            currentCellMap = cleanedCellMaps{k};
+            % Create binary mask for non-zero elements
+            currentMask = currentCellMap ~= 0;
+            
+            % Combine non-zero values into the combinedMatrix
+            combinedMatrix(currentMask) = currentCellMap(currentMask);
+        end
+        figure;
+        imshow(combinedMatrix, []); % Display the combined matrix
+        title('Combined Non-Zero Values from All Cell Maps');
+    
+        networkData.eventNetwork_cellMap_all{currentEvent} = combinedMatrix;
+    
+        % Compute the shortest distance
+        pairwiseDistances = computePairwiseCenterDistances(cleanedCellMaps);
+        networkData.shortestDistanceBetweenCenters{currentEvent} = pairwiseDistances;
+        % Create heatmap of the distance matrix
+        createHeatmap(pairwiseDistances);
+   
+    end 
 end
+
+
+
 
     % save
     fileTemp = extractBefore(AquA_fileName, "_AQuA2"); 
