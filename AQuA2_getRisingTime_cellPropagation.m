@@ -1,9 +1,9 @@
 % i = event number
-for i = 1:numel(res.evtFavList1)
-    imagesc(res.riseLst1{1, i}.dlyMap50)
+for event = 1:numel(data_aqua.res.evtFavList1)
+    imagesc(data_aqua.res.riseLst1{1, event}.dlyMap50)
     
     %propagation matrix
-    matrix = res.riseLst1{1, i}.dlyMap50;
+    matrix = data_aqua.res.riseLst1{1, event}.dlyMap50;
 
     % Find the maximum value
     maxValue = max(matrix(:));
