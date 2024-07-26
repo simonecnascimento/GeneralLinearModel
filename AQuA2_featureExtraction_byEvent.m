@@ -206,7 +206,7 @@ for experiment = 1:length(FilesAll)
     CFU_FilePath = fullfile(CFU_directory, CFU_fileName);
     data_CFU = load(CFU_FilePath);
 
-    for currentEvent = 7:size(networkData,1)
+    for currentEvent = 1:size(networkData,1)
 
         % find the propagation matrix related to the current event
         propagationMap = data_aqua.res.riseLst1{1, currentEvent}.dlyMap50;
@@ -392,9 +392,9 @@ for experiment = 1:length(FilesAll)
             % Combine non-zero values into the combinedMatrix
             combinedMatrix(currentMask) = currentCellMap(currentMask);
         end
-        figure;
-        imshow(combinedMatrix, []); % Display the combined matrix
-        title('Combined Non-Zero Values from All Cell Maps');
+%         figure;
+%         imshow(combinedMatrix, []); % Display the combined matrix
+%         title('Combined Non-Zero Values from All Cell Maps');
     
         networkData.eventNetwork_cellMap_all{currentEvent} = combinedMatrix;
     
@@ -402,7 +402,7 @@ for experiment = 1:length(FilesAll)
         pairwiseDistances = computePairwiseCenterDistances(cleanedCellMaps);
         networkData.shortestDistanceBetweenCenters{currentEvent} = pairwiseDistances;
         % Create heatmap of the distance matrix
-        createHeatmap(pairwiseDistances);
+        %createHeatmap(pairwiseDistances);
    
     end 
 end
