@@ -34,12 +34,3 @@ end
 % save
 newFilename = strcat(filename, '_propagationSpeed.mat');
 save(newFilename);
-
-%% network
-
-% extract network - spatial density (number of events co-occured with current event)
-network = resultsRaw.ftsTb(24,:)';
-
-% save 
-newFilename = strcat(filename, '_analysisByEvent.mat');
-save(newFilename);
