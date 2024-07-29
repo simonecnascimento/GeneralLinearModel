@@ -1,9 +1,9 @@
 %% Load .mat files  (FULL CRANIOTOMY)
 
-clear all
+clear all;
 
 % Change you Current Folder - fullCraniotomy
-cd D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\_analysisByEvent.mat
+cd D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\4._analysisByEvent.mat;
 
 % Initialize an empty table
 table = table();
@@ -127,27 +127,30 @@ min(propagation_thinBone)
 
 %% extract network spatial density
 
-for experiment = 1:length(FilesAll)
+% Initialize a cell array to store the upperTriAverages for each experiment
+allUpperTriAverages = cell(length(FilesAll), 1);
+
+for experiment = 26:length(FilesAll)
     
     % Load analysis .mat file
     data_analysis = load(FilesAll{experiment});
     features = data_analysis.resultsRaw.Row;
     results_complete = data_analysis.resultsRaw.Variables;
 
-    % AQuA2 directory 
+%     % AQuA2 directory 
+%     fileTemp_parts = strsplit(data_analysis.filename, '_');
+%     aqua_directory = fullfile('D:\2photon\Simone\Simone_Macrophages\', ...
+%         fileTemp_parts{1,1}, '\', ...
+%         [fileTemp_parts{1,2} '_' fileTemp_parts{1,3}], '\AQuA2\', ...
+%         [fileTemp_parts{1,1} '_' fileTemp_parts{1,2} '_' fileTemp_parts{1,3} '_run1_reg_Z01_green_Substack(1-927)']);
+%     AquA_fileName = [data_analysis.filename '_AQuA2.mat'];
+
     fileTemp_parts = strsplit(data_analysis.filename, '_');
     aqua_directory = fullfile('D:\2photon\Simone\Simone_Macrophages\', ...
         fileTemp_parts{1,1}, '\', ...
         [fileTemp_parts{1,2} '_' fileTemp_parts{1,3}], '\AQuA2\', ...
-        [fileTemp_parts{1,1} '_' fileTemp_parts{1,2} '_' fileTemp_parts{1,3} '_run1_reg_Z01_green_Substack(1-927)']);
+        [fileTemp_parts{1,1} '_' fileTemp_parts{1,2} '_' fileTemp_parts{1,3} '_reg_green_Substack(1-927)']);
     AquA_fileName = [data_analysis.filename '_AQuA2.mat'];
-
-%         fileTemp_parts = strsplit(data_analysis.filename, '_');
-%     aqua_directory = fullfile('D:\2photon\Simone\Simone_Macrophages\', ...
-%         fileTemp_parts{1,1}, '\', ...
-%         [fileTemp_parts{1,2} '_' fileTemp_parts{1,3}], '\AQuA2\', ...
-%         [fileTemp_parts{1,1} '_' fileTemp_parts{1,2} '_' fileTemp_parts{1,3} '_reg_green_Substack(1-927)']);
-%     AquA_fileName = [data_analysis.filename '_AQuA2.mat'];
 
     % Load AQuA2.mat file 
     fullFilePath = fullfile(aqua_directory, AquA_fileName);
@@ -404,18 +407,88 @@ for experiment = 1:length(FilesAll)
         % Create heatmap of the distance matrix
         %createHeatmap(pairwiseDistances);
    
-    end 
-end
+    end
 
+    % Get distribution of distances between pair of cells
+    % Extract the relevant column
+    shortestDistanceBetweenCenters = networkData.shortestDistanceBetweenCenters;
+    
+    % Initialize an array to store the averages of the upper triangular values
+    upperTriAverages = [];
 
+    % Conversion factor from pixels to micrometers (spatial resolution = 0.49 um/pixel = 2.04pixel/um)
+    conversionFactor = 0.49;
+    
+    % Process each matrix
+    for i = 1:length(shortestDistanceBetweenCenters)
+    currentMatrix = shortestDistanceBetweenCenters{i};
+    
+        if isnumeric(currentMatrix)
+            % Convert each element from pixels to micrometers
+            convertedMatrix = currentMatrix * conversionFactor;
+            
+            % Extract the upper triangular part, excluding the diagonal
+            upperTriValues = convertedMatrix(triu(true(size(convertedMatrix)), 1));
+            
+            % Compute the mean of the upper triangular values, ignoring NaNs
+            upperTriAvg = mean(upperTriValues, 'omitnan');
+            
+            % Append the computed average to the array
+            upperTriAverages = [upperTriAverages; upperTriAvg];
+        end
+    end   
+        
+    % Plot the distribution of the averages
+    figure;
+    histogram(upperTriAverages);
+    title('Distance between pair of cells of concurrent events (um)');
+    xlabel('Average Distance (µm)');
+    ylabel('Frequency');
 
-
-    % save
+    % Save figure
+    % Edit the filename to end with '_cellDistances'
+    currentFolder = pwd;
+    subfolderName = 'cellDistances'; % Define the subfolder name
+    subfolderPath = fullfile(currentFolder, subfolderName); % Create the full path for the subfolder
     fileTemp = extractBefore(AquA_fileName, "_AQuA2"); 
-    networkFilename = strcat(fileTemp, '_network.mat');
+    distancesFileName = strcat(fileTemp, '_cellDistances', '.fig');
+    save_path = fullfile(subfolderPath, distancesFileName);
+    saveas(gcf, save_path);
+
+    % Save data
+    networkFilename = strcat(fileTemp, '_network_propagation.mat');
     save(networkFilename);
 
+    % Store the upperTriAverages for this experiment
+    allUpperTriAverages{experiment} = upperTriAverages;
+
+end
+
+%% Get all averages of distances and get distribution
 
 
 
+
+% Initialize an empty array to store all values
+allValuesDistances_um = [];
+
+% Loop through each array
+for k = 1:length(allUpperTriAverages)
+    currentVector = allUpperTriAverages{k};
+    
+    % Append the values to the allValues array
+    allValuesDistances_um = [allValuesDistances_um; currentVector];
    
+end
+
+% Remove NaN values
+cleanDataDistances_um = allValuesDistances_um(~isnan(allValuesDistances_um));
+
+% Plot the histogram of the cleaned data
+figure;
+histogram(cleanData);
+title('Distance Metrics for Cells with Concurrent Activity');
+xlabel('Distance (um)');
+ylabel('Number of cell pairs');
+
+
