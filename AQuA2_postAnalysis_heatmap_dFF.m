@@ -71,26 +71,49 @@ ylabel('Cell ID');
 
 %% Multiple experiments
 
+%for fullCraniotomy data - load spreadsheet and add Var3
+load('D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\baseline\AQuA2_data_fullCraniotomy_baseline.mat')
+load('D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\baseline\multinucleated cells\multinucleatedCells.mat');
+fullCraniotomy_combinedTable = addvars(combinedTable, multinucleatedCells.Var3, 'NewVariableNames', 'Multinucleated');
+
+%% Cell indices
+
+% first filter out all multinucleated cells
+fullCraniotomy_multinucleated = fullCraniotomy_combinedTable{:,17};
+fullCraniotomy_all_NM_indices = fullCraniotomy_multinucleated == 0;
+fullCraniotomy_numOnes = sum(fullCraniotomy_all_NM_indices);
+
+% create a new combinedTable
+fullCraniotomy_combinedTable_all_NM = fullCraniotomy_combinedTable(fullCraniotomy_all_NM_indices,:);
+
+% separate perivascular and non_perivascular indices
+fullCraniotomy_cellLocation = fullCraniotomy_combinedTable_all_NM{:,13};
+fullCraniotomy_perivascular_indices =  fullCraniotomy_cellLocation == 0;
+fullCraniotomy_non_perivascular_indices =  fullCraniotomy_cellLocation == 2;
+
+% create combinedTable for each cells type
+fullCraniotomy_combinedTable_perivascular_NM = fullCraniotomy_combinedTable(fullCraniotomy_perivascular_indices,:);
+fullCraniotomy_combinedTable_non_perivascular_NM = fullCraniotomy_combinedTable(fullCraniotomy_non_perivascular_indices,:);
+
+%% Separate by type of cell and Sort by number of events
+fullCraniotomy_combinedTable_perivascular_NM_sorted = sortrows(fullCraniotomy_combinedTable_perivascular_NM, 'Number of Events', 'descend');
+fullCraniotomy_combinedTable_non_perivascular_NM_sorted = sortrows(fullCraniotomy_combinedTable_non_perivascular_NM, 'Number of Events', 'descend');
 
 % All cells
-
 % Extract dFF data from combinedTable, converting cell array to matrix
-dFF_data = cell2mat(combinedTable_sorted.dFF);
+dFF_data_all_NM = cell2mat(fullCraniotomy_combinedTable_all_NM.dFF);
 % Apply z-score normalization to the dFF data
-dFF_data_zscore = zscore(dFF_data, [], 1);
+dFF_data_zscore = zscore(dFF_data_all_NM, [], 1);
 
 %perivascular cells
-for perivascular = combinedTable_sorted.("Cell location (0,perivascular;1,adjacent;2,none)") == 0
-    dFF_data_Perivascular = combinedTable_sorted{perivascular,"dFF"};
-end
+dFF_data_Perivascular = fullCraniotomy_combinedTable_perivascular_NM_sorted.dFF;
 dFF_data_Perivascular = cell2mat(dFF_data_Perivascular);
 
 %Non-perivascular cells
-for non_perivascular = combinedTable_sorted.("Cell location (0,perivascular;1,adjacent;2,none)") == 2
-    dFF_data_NonPerivascular = combinedTable_sorted{non_perivascular,"dFF"};
-end
+dFF_data_NonPerivascular = fullCraniotomy_combinedTable_non_perivascular_NM_sorted.dFF;
 dFF_data_NonPerivascular = cell2mat(dFF_data_NonPerivascular);
-dFF_data_NonPerivascular_reduced = dFF_data_NonPerivascular(1:134,:);
+
+dFF_data_NonPerivascular_reduced = dFF_data_NonPerivascular(1:122,:);
 
 % Apply z-score normalization to the dFF data
 dFF_data_Perivascular_zscore = zscore(dFF_data_Perivascular, [], 1);
@@ -98,18 +121,51 @@ dFF_data_NonPerivascular_zscore = zscore(dFF_data_NonPerivascular, [], 1);
 dFF_data_NonPerivascular_reduced_zscore = zscore(dFF_data_NonPerivascular_reduced, [], 1);
 
 % Combine the data from both groups
-combined_data = [dFF_data_Perivascular_zscore; dFF_data_NonPerivascular_reduced_zscore];
+combined_data = [dFF_data_Perivascular_zscore; dFF_data_NonPerivascular_zscore];
 
 % Determine the colorbar limits based on the combined data
-caxis_limits = [min(combined_data(:)), max(combined_data(:))];
+caxis_limits_all_NM = [min(combined_data(:)), max(combined_data(:))];
+caxis_limits_perivascular = [min(dFF_data_Perivascular_zscore(:)), max(dFF_data_Perivascular_zscore(:))];
+caxis_limits_nonPerivascular = [min(dFF_data_NonPerivascular_zscore(:)), max(dFF_data_NonPerivascular_zscore(:))];
 
+%% Sorted by cell location
+
+% % Extract dFF data from combinedTable, converting cell array to matrix
+% dFF_data_sorted = cell2mat(combinedTable_sorted.dFF);
+% % Apply z-score normalization to the dFF data
+% dFF_data_zscore_sorted = zscore(dFF_data_sorted, [], 1);
+% 
+% %perivascular cells
+% for perivascular_sorted = combinedTable_sorted.("Cell location (0,perivascular;1,adjacent;2,none)") == 0
+%     dFF_data_Perivascular_sorted = combinedTable_sorted{perivascular_sorted,"dFF"};
+% end
+% dFF_data_Perivascular_sorted = cell2mat(dFF_data_Perivascular_sorted);
+% 
+% %Non-perivascular cells
+% for non_perivascular_sorted = combinedTable_sorted.("Cell location (0,perivascular;1,adjacent;2,none)") == 2
+%     dFF_data_NonPerivascular_sorted = combinedTable_sorted{non_perivascular_sorted,"dFF"};
+% end
+% dFF_data_NonPerivascular_sorted = cell2mat(dFF_data_NonPerivascular_sorted);
+% 
+% % Apply z-score normalization to the dFF data
+% dFF_data_Perivascular_sorted_zscore = zscore(dFF_data_Perivascular_sorted, [], 1);
+% dFF_data_NonPerivascular_sorted_zscore = zscore(dFF_data_NonPerivascular_sorted, [], 1);
+% 
+% % Combine the data from both groups
+% combined_data_sorted = [dFF_data_Perivascular_sorted_zscore; dFF_data_NonPerivascular_sorted_zscore];
+% 
+% % Determine the colorbar limits based on the combined data
+% caxis_limits_sorted = [min(combined_data_sorted(:)), max(combined_data_sorted(:))];
+% 
+
+%% Plots
 
 %Heatmap all
 figure;
-imagesc(dFF_data_zscore);
+imagesc(combined_data);
 colormap(jet);
 colorbar;
-caxis(caxis_limits); % Set colorbar limits
+caxis(caxis_limits_all_NM); % Set colorbar limits
 title('dFF zscore');
 xlabel('Time(sec)');
 ylabel('Cell');
@@ -119,14 +175,24 @@ figure;
 imagesc(dFF_data_Perivascular_zscore);
 colormap(jet);
 colorbar;
-caxis(caxis_limits); % Set colorbar limits
+caxis(caxis_limits_perivascular); % Set colorbar limits
 title('dFF zscore Perivascular');
 xlabel('Time(sec)');
 ylabel('Cell');
 
-% Heatmap NonPerivascular
+% Heatmap NonPerivascular reduced number to match perivascular
 figure;
-imagesc(dFF_data_NonPerivascular_reduced_zscore);
+imagesc(dFF_data_NonPerivascular_zscore);
+colormap(jet);
+colorbar;
+caxis(caxis_limits_nonPerivascular); % Set colorbar limits
+title('dFF zscoreNonPerivascular');
+xlabel('Time(sec)');
+ylabel('Cell');
+
+% Heatmap NonPerivascular 
+figure;
+imagesc(dFF_data_NonPerivascular_zscore);
 colormap(jet);
 colorbar;
 caxis(caxis_limits); % Set colorbar limits
@@ -134,56 +200,51 @@ title('dFF zscoreNonPerivascular');
 xlabel('Time(sec)');
 ylabel('Cell');
 
-%% Order cells in order of number of events and plot dFF
-
-% Sort combinedTable by number of events
-combinedTable_sorted = sortrows(combinedTable, 'Number of Events', 'descend');
-
-%perivascular cells
-for perivascular_sorted = combinedTable_sorted.("Cell location (0,perivascular;1,adjacent;2,none)") == 0
-    dFF_data_Perivascular_sorted = combinedTable_sorted{perivascular_sorted,"dFF"};
-end
-dFF_data_Perivascular_sorted = cell2mat(dFF_data_Perivascular_sorted);
-
-%Non-perivascular cells
-for non_perivascular_sorted = combinedTable_sorted.("Cell location (0,perivascular;1,adjacent;2,none)") == 2
-    dFF_data_NonPerivascular_sorted = combinedTable_sorted{non_perivascular_sorted,"dFF"};
-end
-dFF_data_NonPerivascular_sorted = cell2mat(dFF_data_NonPerivascular_sorted);
-dFF_data_NonPerivascular_sorted_reduced = dFF_data_NonPerivascular_sorted(1:122,:);
-
-% Apply z-score normalization to the dFF data
-dFF_data_Perivascular_sorted_zscore = zscore(dFF_data_Perivascular_sorted, [], 1);
-dFF_data_NonPerivascular_sorted_zscore = zscore(dFF_data_NonPerivascular_sorted, [], 1);
-dFF_data_NonPerivascular_sorted_reduced_zscore = zscore(dFF_data_NonPerivascular_sorted_reduced, [], 1);
-
-% Combine the data from both groups
-combined_data_sorted = [dFF_data_Perivascular_sorted_zscore; dFF_data_NonPerivascular_sorted_reduced_zscore];
-
-% Determine the colorbar limits based on the combined data
-caxis_limits_sorted = [min(combined_data_sorted(:)), max(combined_data_sorted(:))];
-
-% Heatmap Perivascular
-figure;
-imagesc(dFF_data_Perivascular_sorted_zscore);
-colormap(jet);
-colorbar;
-caxis(caxis_limits_sorted); % Set colorbar limits
-title('dF/F0 Perivascular');
-xlabel('Time(sec)');
-ylabel('Cell');
-
-% Heatmap NonPerivascular
-figure;
-imagesc(dFF_data_NonPerivascular_sorted_reduced_zscore);
-colormap(jet);
-colorbar;
-caxis(caxis_limits_sorted); % Set colorbar limits
-title('dF/F0 NonPerivascular');
-xlabel('Time(sec)');
-ylabel('Cell');
-
-
-%%
-
-
+%% Order in number of events and plot dFF
+% 
+% % Sort combinedTable by number of events
+% combinedTable_sorted = sortrows(combinedTable, 'Number of Events', 'descend');
+% 
+% %perivascular cells
+% for perivascular_sorted = combinedTable_sorted.("Cell location (0,perivascular;1,adjacent;2,none)") == 0
+%     dFF_data_Perivascular_sorted = combinedTable_sorted{perivascular_sorted,"dFF"};
+% end
+% dFF_data_Perivascular_sorted = cell2mat(dFF_data_Perivascular_sorted);
+% 
+% %Non-perivascular cells
+% for non_perivascular_sorted = combinedTable_sorted.("Cell location (0,perivascular;1,adjacent;2,none)") == 2
+%     dFF_data_NonPerivascular_sorted = combinedTable_sorted{non_perivascular_sorted,"dFF"};
+% end
+% dFF_data_NonPerivascular_sorted = cell2mat(dFF_data_NonPerivascular_sorted);
+% dFF_data_NonPerivascular_sorted_reduced = dFF_data_NonPerivascular_sorted(1:122,:);
+% 
+% % Apply z-score normalization to the dFF data
+% dFF_data_Perivascular_sorted_zscore = zscore(dFF_data_Perivascular_sorted, [], 1);
+% dFF_data_NonPerivascular_sorted_zscore = zscore(dFF_data_NonPerivascular_sorted, [], 1);
+% dFF_data_NonPerivascular_sorted_reduced_zscore = zscore(dFF_data_NonPerivascular_sorted_reduced, [], 1);
+% 
+% % Combine the data from both groups
+% combined_data_sorted = [dFF_data_Perivascular_sorted_zscore; dFF_data_NonPerivascular_sorted_reduced_zscore];
+% 
+% % Determine the colorbar limits based on the combined data
+% caxis_limits_sorted = [min(combined_data_sorted(:)), max(combined_data_sorted(:))];
+% 
+% % Heatmap Perivascular
+% figure;
+% imagesc(dFF_data_Perivascular_sorted_zscore);
+% colormap(jet);
+% colorbar;
+% caxis(caxis_limits_sorted); % Set colorbar limits
+% title('dF/F0 Perivascular');
+% xlabel('Time(sec)');
+% ylabel('Cell');
+% 
+% % Heatmap NonPerivascular
+% figure;
+% imagesc(dFF_data_NonPerivascular_sorted_reduced_zscore);
+% colormap(jet);
+% colorbar;
+% caxis(caxis_limits_sorted); % Set colorbar limits
+% title('dF/F0 NonPerivascular');
+% xlabel('Time(sec)');
+% ylabel('Cell');
