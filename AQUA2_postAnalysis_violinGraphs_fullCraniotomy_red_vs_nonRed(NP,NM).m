@@ -1,19 +1,18 @@
 %% Filter cells (NP, NM = NOT PERIVASCULAR, NOT MULTINUCLEATED)
 
 %for fullCraniotomy data - load spreadsheet and add Var3
-load('D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\multinucleatedCells.mat');
+load('D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\baseline\multinucleated cells\multinucleatedCells.mat');
 combinedTable_fullCraniotomy = addvars(combinedTable, multinucleatedCells.Var3, 'NewVariableNames', 'Multinucleated');
 
 %for thinBone data - create a new table 'multinucleatedCells' and add Var1
 multinucleatedCells = array2table(zeros(94,1));
 combinedTable_thinBone = addvars(combinedTable, multinucleatedCells.Var1, 'NewVariableNames', 'Multinucleated');
 
-cellLocation = combinedTableBigCells{:,13};
-redLabel = combinedTableBigCells{:,14};
-multinucleated = combinedTableBigCells{:,17};
+cellLocation = combinedTable_fullCraniotomy{:,13};
+redLabel = combinedTable_fullCraniotomy{:,14};
+multinucleated = combinedTable_fullCraniotomy{:,17};
 
-% bigCell_indices = (multinucleated == 1);
-notBigCell_indices = (multinucleated == 0);
+multinucleated_indices = (multinucleated == 1);
 NP_NM_red_indices = cellLocation == 2 & multinucleated == 0 & redLabel == 1;
 NP_NM_not_red_indices = cellLocation == 2 & multinucleated == 0 & redLabel == 0;
 %nonPerivascular_notBigCell_red_indices = cellLocation == 2 & multinucleated == 0 & redLabel == 1;
@@ -21,8 +20,8 @@ NP_NM_not_red_indices = cellLocation == 2 & multinucleated == 0 & redLabel == 0;
 
 %% Circularity Red vs Not red
 
-circularity = combinedTableBigCells{:,4};
-circularity_NP_NM = circularity(notBigCell_indices);
+circularity = combinedTable_thinBone{:,4};
+circularity_NP_NM = circularity(multinucleated_indices);
 circularity_NP_NM_red = circularity(NP_NM_red_indices);
 circularity_NP_NM_not_red = circularity(NP_NM_not_red_indices);
 
