@@ -2,6 +2,7 @@
 %% Separate data points belonging to each group
 
 cellLocation = combinedTable{:,13};
+redLabel = combinedTable{:,14};
 perivascular_indices = (cellLocation == 0); % Indices of cells belonging to group 0
 nonPerivascular_indices = (cellLocation == 2); % Indices of cells belonging to group 2
 
@@ -25,8 +26,6 @@ x_spacing_factor = 0.02; % Adjust as needed
 
 %% RedLabel Perivascular x NonPerivascular
 
-redLabel = combinedTable{:,14};
-
 % Count perivascular cells labeled with red and those not labeled with red
 perivascular_red = sum(cellLocation == 0 & redLabel == 1);
 perivascular_not_red = sum(cellLocation == 0 & redLabel == 0);
@@ -36,6 +35,7 @@ non_perivascular_not_red = sum(cellLocation == 2 & redLabel == 0);
 % Create grouped bar chart with custom colors
 figure;
 bar_data = [perivascular_red, perivascular_not_red; non_perivascular_red, non_perivascular_not_red];
+
 bar_handle = bar(bar_data, 'grouped');
 
 % Set custom colors
@@ -44,7 +44,7 @@ set(bar_handle(2), 'FaceColor', 'green');
 
 % Customize plot
 ylabel('Number of Cells');
-xticklabels({'Perivascular', 'Non-Perivascular'}); % Adjusted position for clarity
+%xticklabels({'Perivascular', 'Non-Perivascular'}); % Adjusted position for clarity
 legend({'Red Label', 'No Red Label'}, 'Location', 'best');
 title('Presence of red dextran by cell location');
 ylim([0, 350]);
@@ -56,6 +56,40 @@ ylim([0, 350]);
 %         text(x_coord, bar_data(i, j), num2str(bar_data(i, j)), 'HorizontalAlignment', 'center', 'VerticalAlignment', 'bottom');
 %     end
 % end
+
+%% RedLabel x Not red label (Non-Perivascular only bar graph)
+
+% Count non-perivascular cells labeled with red and those not labeled with red
+non_perivascular_red = sum(cellLocation == 2 & redLabel == 1);
+non_perivascular_not_red = sum(cellLocation == 2 & redLabel == 0);
+
+% Create bar chart
+figure;
+bar_data = [non_perivascular_red, non_perivascular_not_red];
+
+bar_handle = bar(bar_data);
+
+% Set custom colors for each bar using CData
+bar_handle.FaceColor = 'flat';  % Allow different colors per bar
+bar_handle.CData(1, :) = [1, 0, 0];   % Red for red-labeled cells
+bar_handle.CData(2, :) = [0, 1, 0];   % Green for not-red-labeled cells
+
+% Customize plot
+ylabel('Number of Cells');
+%xticklabels({'Red Labeled', 'Not Red Labeled'});
+legend({'Labeled', 'Non-Labeled'}, 'Location', 'northeast');
+title('Presence of Red Dextran in cells', FontSize=30);
+ylim([0, 350]);
+
+% Add custom legend by plotting invisible bars
+hold on;
+h1 = bar(nan, 'FaceColor', [1, 0, 0]); % Invisible red bar
+h2 = bar(nan, 'FaceColor', [0, 1, 0]); % Invisible green bar
+legend([h1, h2], {'Labeled', 'Non-Labeled'}, 'Location', 'northeast');
+
+% Remove numeric ticks from x-axis
+set(gca, 'xtick', []);
+
 
 %% Circularity Perivascular x Non-Perivascular - SCATTERPLOT
 
