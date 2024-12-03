@@ -95,10 +95,12 @@ FilesAll = {
 
 %% extract network spatial density
 
-% Initialize a cell array to store the upperTriAverages for each experiment
-allUpperTriValues = cell(length(FilesAll), 1);
+% Initialize a cell array to store the upperTriAverages for each experiment, for distance between cells
 
-for experiment = 1:length(FilesAll)
+allUpperTriValues = cell(length(FilesAll), 1); %distance between pair of cells
+eventDuration_simultanenousEvents_all = cell(length(FilesAll), 1);
+
+for experiment = 2:length(FilesAll)
     
     % Load analysis .mat file
     data_analysis = load(FilesAll{experiment});
@@ -136,21 +138,27 @@ for experiment = 1:length(FilesAll)
     % for current event
     propagationMap_event = cell(numEvents,1);
     % for cell corresponding the current event
-    cellNumber = cell(numEvents,1);
-    cellType = cell(numEvents,1);
-    cellMap = cell(numEvents,1);
+    cellNumber_event = cell(numEvents,1);
+    cellType_event = cell(numEvents,1);
+    cellMap_event = cell(numEvents,1);
     
     % for all simultaneous events
     propagationMap_all = cell(numEvents,1);
     % for cells corresponding the all simultaneous events
     cellNumber_all = cell(numEvents,1);
+    cellType_all = cell(numEvents,1);
     cellMap_all = cell(numEvents,1);
-   
+    % for cells corresponding the all simultaneous events, but without repeating cell numbers
+    cellNumber_all_unique = cell(numEvents,1);
+    cellMap_all_unique = cell(numEvents,1);
+
     % for events removing current Event
     simultaneousEvents_network = simultaneousEvents_all; %duplicate 
+    simultaneousEvents_network_corrected = simultaneousEvents_all; %duplicate and remove any eventToDelete
     propagationMap_network = cell(numEvents,1);
     % for cell corresponding to events in the network
     cellNumber_network = cell(numEvents,1);
+    cellType_network = cell(numEvents,1);
     cellMap_network = cell(numEvents,1);
 
     % combine propagation map of event to map of cell
@@ -159,9 +167,14 @@ for experiment = 1:length(FilesAll)
     shortestDistanceBetweenCenters = cell(numEvents,1);
 
     % create a table with network results
-    networkData = [propagationMap_event, cellNumber, cellType, cellMap, nSimultanousEvents, simultaneousEvents_all, propagationMap_all, cellNumber_all, cellMap_all, eventNetwork_cellMap_all, shortestDistanceBetweenCenters, simultaneousEvents_network, propagationMap_network, cellNumber_network, cellMap_network];
+    networkData = [propagationMap_event, cellNumber_event, cellType_event, cellMap_event, nSimultanousEvents, ...
+        simultaneousEvents_all, propagationMap_all, cellNumber_all, cellType_all, cellMap_all, ...
+        cellNumber_all_unique, cellMap_all_unique, eventNetwork_cellMap_all, shortestDistanceBetweenCenters, ...
+        simultaneousEvents_network, simultaneousEvents_network_corrected, propagationMap_network, cellNumber_network, cellType_network, cellMap_network];
     networkData = cell2table(networkData);
-    networkData.Properties.VariableNames = {'propagationMap_event','cellNumber', 'cellType','cellMap', 'nSimultanousEvents', 'simultaneousEvents_all', 'propagationMap_all', 'cellNumber_all', 'cellMap_all', 'eventNetwork_cellMap_all', 'shortestDistanceBetweenCenters', 'simultaneousEvents_network', 'propagationMap_network', 'cellNumber_network', 'cellMap_network'};
+    networkData.Properties.VariableNames = {'propagationMap_event','cellNumber_event', 'cellType_event','cellMap_event', 'nSimultanousEvents', ...
+        'simultaneousEvents_all', 'propagationMap_all', 'cellNumber_all', 'cellType_all', 'cellMap_all', 'cellNumber_all_unique', 'cellMap_all_unique', 'eventNetwork_cellMap_all', 'shortestDistanceBetweenCenters', ...
+        'simultaneousEvents_network', 'simultaneousEvents_network_corrected', 'propagationMap_network', 'cellNumber_network', 'cellType_network', 'cellMap_network'};
       
 %     % Duplicate table to remove repetitive cells in the future
 %     networkData_cleaned = networkData;
@@ -178,151 +191,226 @@ for experiment = 1:length(FilesAll)
     CFU_FilePath = fullfile(CFU_directory, CFU_fileName);
     data_CFU = load(CFU_FilePath);
 
+    % Matrix by event
+    simultaneousMatrix = zeros(numEvents, numEvents);
+    [numRows, numCols] = size(simultaneousMatrix);
+    simultaneousMatrixDelay = zeros(numEvents, numEvents);
+    startingFrame = data_analysis.resultsRaw.ftsTb(3,:); %starting frame of event to compute delay
+    
+    % Matrix by cell
+    numCells = size(data_CFU.cfuInfo1,1);
+    simultaneousMatrixbyCell = zeros(numCells, numCells);
+    simultaneousMatrixDelaybyCell = cell(numCells, numCells);
+    simultaneousMatrixDelaybyCell_average = cell(numCells, numCells);
+
     for currentEvent = 1:size(networkData,1)
 
         % find the propagation matrix related to the current event
-        propagationMap = data_aqua.res.riseLst1{1, currentEvent}.dlyMap50;
-        networkData.propagationMap_event{currentEvent} = propagationMap;
+        propagationMap_event = data_aqua.res.riseLst1{1, currentEvent}.dlyMap50;
+        networkData.propagationMap_event{currentEvent} = propagationMap_event;
     
         % find the cell related to the current event
-        cellIndex = find(cellfun(@(c) any(c == currentEvent), data_CFU.cfuInfo1(:, 2)));
-        networkData.cellNumber{currentEvent} = cellIndex;
+        cellNumber_event = find(cellfun(@(c) any(c == currentEvent), data_CFU.cfuInfo1(:, 2)));
+        networkData.cellNumber_event{currentEvent} = cellNumber_event;
 
         % find if cell is perivascular or nonPerivascular
-        if ismember(cellIndex,data_analysis.perivascularCells)
-            networkData{currentEvent,3} = {0};
+        if ismember(cellNumber_event,data_analysis.perivascularCells)
+            networkData.cellType_event{currentEvent} = 0;
         else
-            networkData{currentEvent,3} = {2};
+            networkData.cellType_event{currentEvent} = 2;
         end
 
         % Get map of the cell of current event
-        cellMap = data_CFU.cfuInfo1{cellIndex, 3};
-        networkData.cellMap{currentEvent} = cellMap;
+        cellMap_event = data_CFU.cfuInfo1{cellNumber_event, 3};
+        networkData.cellMap_event{currentEvent} = cellMap_event;
+     
+        % Find list of all simultaneous events related to that event and fill up simultaneousMatrix
+        simultaneousEvents_current = networkData.simultaneousEvents_all{currentEvent};
+      
+        for a = 1:length(simultaneousEvents_current)
+            simultaneousEvent = simultaneousEvents_current(a);
 
-        % Find list of all simultaneous events related to that event
-        simultaneousEvents_all = networkData.simultaneousEvents_all{currentEvent};
-        
-        for a = 1:length(simultaneousEvents_all)
-            simultaneousEvent_all = simultaneousEvents_all(a);
-
-            % find the propagation matrix related to the simultaneous event
-            propagationMap_all = data_aqua.res.riseLst1{1, simultaneousEvent_all}.dlyMap50;
+            % find the propagation matrix map related to the simultaneous event
+            propagationMap_all = data_aqua.res.riseLst1{1, simultaneousEvent}.dlyMap50;
             networkData.propagationMap_all{currentEvent}{end+1} = propagationMap_all;
             
             % Find the cell of the specific event
-            cellIndex_all = find(cellfun(@(c) any(c == simultaneousEvent_all), data_CFU.cfuInfo1(:, 2)));
+            cellNumber_all = find(cellfun(@(c) any(c == simultaneousEvent), data_CFU.cfuInfo1(:, 2)));
 
-            if ~isempty(cellIndex_all)
+            if ~isempty(cellNumber_all)
                 if isempty(networkData.cellNumber_all{currentEvent})
-                    networkData.cellNumber_all{currentEvent} = cellIndex_all;
+                    networkData.cellNumber_all{currentEvent} = cellNumber_all;
                 else
-                    networkData.cellNumber_all{currentEvent} = [networkData.cellNumber_all{currentEvent}, cellIndex_all];
+                    networkData.cellNumber_all{currentEvent} = [networkData.cellNumber_all{currentEvent}, cellNumber_all];
                 end
+            end
+            
+            % find if cell is perivascular or nonPerivascular
+            if ismember(cellNumber_all, data_analysis.perivascularCells)
+                cellType_all = 0;
+            else
+                cellType_all = 2;
+            end
+            
+            % populate networkData table
+            if isempty(networkData.cellType_all{currentEvent})
+               networkData.cellType_all{currentEvent} = cellType_all;
+            else
+                networkData.cellType_all{currentEvent} = [networkData.cellType_all{currentEvent}, cellType_all];
             end
 
             % Find the map of the simultaneousEvent to the cell array
-            cellMap_all = data_CFU.cfuInfo1{cellIndex_all, 3};
+            cellMap_all = data_CFU.cfuInfo1{cellNumber_all, 3};
             networkData.cellMap_all{currentEvent}{end+1} = cellMap_all;  
 
-            % eventNetwork_cellMap_all
-   
-%             % Cell Map
+%             %eventNetwork_cellMap_all
+%    
+%             %Cell Map
 %             tempMap = networkData.cellMap_all{currentEvent}{simultaneousEvent_all};
 %             nonZeroMask = tempMap > 0;
 %             countTempMap = nnz((tempMap));
 %             imshow(nonZeroMask);
 %             
-%             % Event Propagation
+%             %Event Propagation
 %             tempPropagation = networkData.propagationMap_all{currentEvent}{simultaneousEvent_all};  
 %             countTempPropagation = nnz(~isnan(tempPropagation));
 %             
-%             % Get the linear indices of non-zero elements in temp
+%             %Get the linear indices of non-zero elements in tempMap
 %             nonZeroIndicesTempMap = find(tempMap ~= 0);
 %             
-%             % Get the linear indices of non-NaN elements in matrix
+%             %Get the linear indices of non-NaN elements in tempPropagation
 %             nonNaNIndicesTempPropagation = find(~isnan(tempPropagation));
 %             
-%             % Ensure both have the same number of elements
+%             %Ensure both have the same number of elements
 %             if length(nonZeroIndicesTempMap) ~= length(nonNaNIndicesTempPropagation)
 %                 error('The number of non-zero elements in temp must equal the number of non-NaN elements in matrix.');
 %             end
 %             
-%             % Create a new variable to hold the result
+%             %Create a new variable to hold the result
 %             newTempMap = tempMap;
 %             
-%             % Insert the values from matrix into the newTemp at the corresponding positions
+%             %Insert the values from matrix tempPropagation into the newTemp at the corresponding positions
 %             newTempMap(nonZeroIndicesTempMap) = tempPropagation(nonNaNIndicesTempPropagation);
 %             
-%             
-%             % Replace all zeros with NaN in temp
+%             %Replace all zeros with NaN in newTempMap
 %             newTempMap(newTempMap == 0) = NaN;
 % 
-%             % Substitute networkData table
+%             %Substitute networkData table
 %             networkData.eventNetwork_cellMap_all{currentEvent}{end+1} = newTempMap; 
-            
-%             % Plot image of eventNetwork_cellMap_all
+%             
+%             %Plot image of eventNetwork_cellMap_all
 %             imagesc(newTempMap)
 %             matrixTemp = newTempMap;
 %             
-%             % Find the maximum value
+%             %Find the maximum value
 %             maxValue = max(matrixTemp(:));
-%             % Find all positions of the maximum value
+%             Find all positions of the maximum value
 %             [maxRows, maxCols] = find(matrixTemp == maxValue);
 %             
-%             % Find the minimum value
+%             %Find the minimum value
 %             minValue = min(matrixTemp(:));
-%             % Find all positions of the minimum value
+%             Find all positions of the minimum value
 %             [minRows, minCols] = find(matrixTemp == minValue);
 %             
-%             % Display the results for maximum value
+%             %Display the results for maximum value
 %             disp(['Maximum value: ', num2str(maxValue)]);
 %             disp('Positions of max value:');
 %             for j = 1:length(maxRows)
 %                 disp(['(', num2str(maxRows(j)), ', ', num2str(maxCols(j)), ')']);
 %             end
 %             
-%             % Display the results for minimum value
+%             %Display the results for minimum value
 %             disp(['Minimum value: ', num2str(minValue)]);
 %             disp('Positions of min value:');
 %             for j = 1:length(minRows)
 %                 disp(['(', num2str(minRows(j)), ', ', num2str(minCols(j)), ')']);
 %             end
+        
+            simultaneousMatrix(currentEvent, simultaneousEvent) = 1;
+            simultaneousMatrix(currentEvent, currentEvent) = 1; % Ensure the diagonal is set to 1 (an event is always simultaneous with itself)
+           
+            % Calculate delay between current event and 1st simultanous event
+            element = simultaneousMatrix(currentEvent, simultaneousEvent); % Access the current element
+            % Perform operations on 'element'
+            %fprintf('Element at (%d, %d): %d\n', currentEvent, simultaneousEvent, element);
+            startingFrame_currentEvent = startingFrame{currentEvent};
+            startingFrame_simultaneousEvent = startingFrame{simultaneousEvent};
+            delay = startingFrame_currentEvent-startingFrame_simultaneousEvent;
+              if delay < 0
+                 delay = 0;
+              end
+            simultaneousMatrixDelay(currentEvent,simultaneousEvent) = delay;
+
+            % Check if the cell already contains data
+            if isempty(simultaneousMatrixDelaybyCell{cellNumber_event, cellNumber_all})
+                % If empty, initialize it as an array with the current delay
+                simultaneousMatrixDelaybyCell{cellNumber_event, cellNumber_all} = delay;
+            else
+                % Append the new delay to the existing data
+                simultaneousMatrixDelaybyCell{cellNumber_event, cellNumber_all} = ...
+                [simultaneousMatrixDelaybyCell{cellNumber_event, cellNumber_all}, delay];
+            end            
         end
 
         % Duplicate all events and Remove the current event from all simultaneous events
-        simultaneousEvents_network = simultaneousEvents_all; %duplicate 
-        simultaneousEvents_network(simultaneousEvents_all == currentEvent) = [];
+        simultaneousEvents_network = simultaneousEvents_current; %duplicate 
+        simultaneousEvents_network(simultaneousEvents_current == currentEvent) = [];
         % Update the networkData table with the modified list
         networkData.simultaneousEvents_network{currentEvent} = simultaneousEvents_network;
+
+        % Duplicate events
+        simultaneousEvents_network_corrected = simultaneousEvents_network;
+        networkData.simultaneousEvents_network_corrected{currentEvent} = simultaneousEvents_network_corrected;
           
+        % Check if any elements in simultaneousEvents_network_corrected needs to be deleted
+        if any(ismember(simultaneousEvents_network_corrected, data_analysis.eventsToDelete))
+            % Keep only elements that are not in eventsToDelete
+            simultaneousEvents_network_corrected = simultaneousEvents_network_corrected(~ismember(simultaneousEvents_network_corrected, data_analysis.eventsToDelete));
+            networkData.simultaneousEvents_network_corrected{currentEvent} = simultaneousEvents_network_corrected;
+        end
+
         % Initialize an array to store indices of simultaneousEvents to remove
         indicesToRemove = [];
 
         %remove current event from network events
-        for b = 1:length(simultaneousEvents_network)
-            simultaneousEvent_network = simultaneousEvents_network(b);
+        for b = 1:length(simultaneousEvents_network_corrected)
+            simultaneousEvent_network_corrected = simultaneousEvents_network_corrected(b);
     
             % Check if the simultaneous event is in the list of cellEvents
-            if ismember(simultaneousEvent_network, data_CFU.cfuInfo1{cellIndex, 2})
+            if ismember(simultaneousEvent_network_corrected, data_CFU.cfuInfo1{cellNumber_event, 2})
                 % Add the index to the list of indices to remove
                 indicesToRemove = [indicesToRemove, b];
             end
 
             % find the propagation matrix related to the current event
-            propagationMap_network = data_aqua.res.riseLst1{1, simultaneousEvent_network}.dlyMap50;
+            propagationMap_network = data_aqua.res.riseLst1{1, simultaneousEvent_network_corrected}.dlyMap50;
             networkData.propagationMap_network{currentEvent}{end+1} = propagationMap_network;
 
             % Find the cell of the specific event
-            cellIndex_network = find(cellfun(@(c) any(c == simultaneousEvent_network), data_CFU.cfuInfo1(:, 2)));
+            cellNumber_network = find(cellfun(@(c) any(c == simultaneousEvent_network_corrected), data_CFU.cfuInfo1(:, 2)));
 
-            if ~isempty(cellIndex_network)
+            if ~isempty(cellNumber_network)
                 if isempty(networkData.cellNumber_network{currentEvent})
-                    networkData.cellNumber_network{currentEvent} = cellIndex_network;
+                    networkData.cellNumber_network{currentEvent} = cellNumber_network;
                 else
-                    networkData.cellNumber_network{currentEvent} = [networkData.cellNumber_network{currentEvent}, cellIndex_network];
+                    networkData.cellNumber_network{currentEvent} = [networkData.cellNumber_network{currentEvent}, cellNumber_network];
                 end
             end
 
+            % find if cell is perivascular or nonPerivascular
+            if ismember(cellNumber_network, data_analysis.perivascularCells)
+                cellType_network = 0;
+            else
+                cellType_network = 2;
+            end
+
+            % populate networkData table
+            if isempty(networkData.cellType_network{currentEvent})
+               networkData.cellType_network{currentEvent} = cellType_network;
+            else
+                networkData.cellType_network{currentEvent} = [networkData.cellType_network{currentEvent}, cellType_network];
+            end
+            
             % Check if the cellMap entry for simultaneousEvent is empty and initialize if needed
             if isempty(networkData.cellMap_network{currentEvent})
                 % Initialize networkData.cellMap{currentEvent} as a cell array of size 1x1
@@ -330,16 +418,16 @@ for experiment = 1:length(FilesAll)
             end
 
             % Find the map of the simultaneousEvent to the cell array
-            cellMap_network = data_CFU.cfuInfo1{cellIndex_network, 3};
+            cellMap_network = data_CFU.cfuInfo1{cellNumber_network, 3};
             networkData.cellMap_network{currentEvent}{end+1} = cellMap_network;
         end
         
         % Remove the indices in reverse order to avoid out of range errors
         for i = length(indicesToRemove):-1:1
-            networkData.simultaneousEvents_network{currentEvent}(indicesToRemove(i)) = [];
+            networkData.simultaneousEvents_network_corrected{currentEvent}(indicesToRemove(i)) = [];
         end
 
-        % COMBINE CELL MAPS
+        % COMBINE CELL MAPS 
     
         cellNumbers = num2cell(networkData{currentEvent, 'cellNumber_all'}{1}); % Assuming cellNumber_all is a cell array
         cellMaps = networkData{currentEvent, 'cellMap_all'}{1}; % cellMap_all might already be a cell array
@@ -356,8 +444,8 @@ for experiment = 1:length(FilesAll)
         cleanedCellMaps = cellMaps(ia);
     
         % Update the cleaned table
-        networkData{currentEvent, 'cellNumber_all'} = {uniqueCellNumbers};
-        networkData{currentEvent, 'cellMap_all'}{:} = cleanedCellMaps;
+        networkData{currentEvent, 'cellNumber_all_unique'} = {uniqueCellNumbers};
+        networkData{currentEvent, 'cellMap_all_unique'}{:} = cleanedCellMaps;
     
         % Initialize the combined matrix with zeros
         combinedMatrix = zeros(size(cleanedCellMaps{1}));
@@ -382,7 +470,6 @@ for experiment = 1:length(FilesAll)
         networkData.shortestDistanceBetweenCenters{currentEvent} = pairwiseDistances;
         % Create heatmap of the distance matrix
         %createHeatmap(pairwiseDistances);
-   
     end
 
     % Get distribution of distances between pair of cells
@@ -416,6 +503,9 @@ for experiment = 1:length(FilesAll)
             upperTriValues = [upperTriValues; upperTriValue];
         end
     end   
+
+    % Store the upperTriValues for this experiment
+    allUpperTriValues{experiment} = upperTriValues;
         
 %     % Plot the distribution of the averages
 %     figure;
@@ -439,20 +529,100 @@ for experiment = 1:length(FilesAll)
 %     % Save data
 %     networkFilename = strcat(fileTemp, '_network_propagation.mat');
 %     save(networkFilename);
+
+    % Get events duration and simultaneous events
+    eventDuration = table2cell(data_analysis.resultsRaw("Curve - Duration 10% to 10%","ftsTb"));
+    eventDuration = eventDuration{1,1}';
+    eventDuration_simultaneousEvents = [eventDuration,simultaneousEvents_all]; 
+    eventDuration_simultanenousEvents_all{experiment} = eventDuration_simultaneousEvents; % Store values for this experiment
+
+    % MATRIX for all cells (distance and delay)
+    pairwiseDistanceMatrix = nan(numCells, numCells); % Initialize with NaN
+
+    % Calculate distance and average delay between events within cells
+    for cell1 = 1:numCells
+        for cell2 = 1:numCells
+
+            % Distance
+            % Retrieve the cell numbers
+            cellNumber_matrix = [cell1,cell2];
+
+            % Retrieve the cell maps for the two cells
+            cellMap1 = data_CFU.cfuInfo1{cell1, 3};
+            cellMap2 = data_CFU.cfuInfo1{cell2, 3};
+            cellMap_matrix = {cellMap1,cellMap2};
+ 
+            % Initialize the combined matrix with zeros
+            combinedMatrix_allCells = zeros(size(cellMap1));
+        
+            % Loop over each cellMap and combine non-zero values
+            for k = 1:numel(cellMap_matrix)
+                currentCellMap = cellMap_matrix{k};
+                % Create binary mask for non-zero elements
+                currentMask = currentCellMap ~= 0;
+                
+                % Combine non-zero values into the combinedMatrix
+                combinedMatrix_allCells(currentMask) = currentCellMap(currentMask);
+            end
+%             figure;
+%             imshow(combinedMatrix_allCells, []); % Display the combined matrix
+%             title('Combined Non-Zero Values from All Cell Maps');
+
+            % Compute pairwise distance 
+            distance = computePairwiseCenterDistances({cellMap1, cellMap2});
+            % Logical indexing to exclude NaN values
+            nonNaNValues = distance(~isnan(distance));
+            firstValue = nonNaNValues(1); 
+            convertedValue = firstValue * conversionFactor;
+            
+            % Fill the matrix symmetrically
+            pairwiseDistanceMatrix(cell1, cell2) = convertedValue;
+            pairwiseDistanceMatrix(cell2, cell1) = convertedValue; % Symmetric
+ 
+            % Delay
+            % Get the delay data for the current cell
+            data = simultaneousMatrixDelaybyCell{cell1,cell2};
+            % Exclude zeros and negative values using logical indexing
+            validData = data(data > 0);
+            % Calculate the mean of the valid data (non-zero and non-negative elements)
+            if ~isempty(validData) % Check if there are valid elements
+                meanValue = mean(validData);
+            else
+                meanValue = NaN; % Assign NaN if no valid data
+            end    
+            % Store the mean value in the output matrix
+            simultaneousMatrixDelaybyCell_average{cell1, cell2} = meanValue;
+        end
+    end
+
+%     % Plot digraph with cell correlation
+%     simultaneousMatrixDelaybyCell_average2 = cell2mat(simultaneousMatrixDelaybyCell_average);
+%     graphAverage = digraph(simultaneousMatrixDelaybyCell_average);
+%     plot(graphAverage)
 % 
-%     % Store the upperTriAverages for this experiment
-%     allUpperTriAverages{experiment} = upperTriAverages;
-
-    % Store the upperTriValues for this experiment
-    allUpperTriValues{experiment} = upperTriValues;
-
+%     % Check if the matrix is symmetric
+%     isSymmetric = isequal(simultaneousMatrixDelaybyCell_average, simultaneousMatrixDelaybyCell_average');
+%     if isSymmetric
+%         disp('The matrix is symmetric.');
+%     else
+%         disp('The matrix is not symmetric.'); %likely means that the delay relationships between cells are directional 
+%     end
+% 
+%     % Replace NaN with 0 for graph representation
+%     adjMatrix = simultaneousMatrixDelaybyCell_average2;
+%     adjMatrix(isnan(adjMatrix)) = 0;
+%     
+%     % Create a directed graph
+%     G = digraph(adjMatrix);
+%     
+%     % Plot the directed graph
+%     figure;
+%     plot(G, 'EdgeLabel', G.Edges.Weight);
+%     title('Directed Network of Cells Based on Average Delays');
 
 end
 
 %% Get all averages of distances and get distribution
-
-
-
 
 % Initialize an empty array to store all values
 allValuesDistances_um = [];
@@ -462,8 +632,7 @@ for k = 1:length(allUpperTriValues) %allUpperTriAverages
     currentVector = allUpperTriValues{k}; %allUpperTriAverages
     
     % Append the values to the allValues array
-    allValuesDistances_um = [allValuesDistances_um; currentVector];
-   
+    allValuesDistances_um = [allValuesDistances_um; currentVector]; 
 end
 
 % Remove NaN values
@@ -475,4 +644,47 @@ histogram(cleanDataDistances_um);
 title('Distance Metrics for Cells with Concurrent Activity');
 xlabel('Distance (um)');
 ylabel('Number of cell pairs');
+
+%% correlation between duration of events and number of simultaneous events
+
+eventDuration = table2cell(data_analysis.resultsRaw("Curve - Duration 10% to 10%","ftsTb"));
+eventDuration = eventDuration{1,1}';
+
+eventDuration_simultaneousEvents = [eventDuration,simultaneousEvents_all];
+
+% Calculate the number of elements in each cell array in column2
+numElements = cellfun(@numel, eventDuration_simultaneousEvents(:,2));  % This gives the length of each array in column2
+
+duration = cell2mat(eventDuration_simultaneousEvents(:,1));
+% Compute the correlation between column1 and the number of elements in column2
+correlation = corr(duration(:), numElements(:));  % Ensure both are column vectors
+
+% Display the result
+disp(['Correlation between column1 and the number of elements in column2: ' num2str(correlation)]);
+
+%% Correlation between duration of events and number of simultaneous events
+test = eventDuration_simultaneousEvents_all(2:37,1);
+
+test2 = [];
+
+for x = 1:size(test,1)
+    data = test{x};
+    test2 = [test2;data];
+end
+
+% Assuming `data` is your input where column 1 has values and column 2 has elements (e.g., arrays or cells)
+
+% Extract column 1
+durationEvent = cell2mat(test2(:, 1)); % Convert to numeric if it's not already
+
+% Compute the number of elements in column 2 for each row
+numSimultaneousEvents = cellfun(@numel, test2(:, 2)); % Use `numel` to count elements in each array/cell
+
+% Calculate the correlation
+correlation = corr(durationEvent, numSimultaneousEvents, 'Rows', 'complete');
+
+% Display the result
+disp(['Correlation between column 1 and number of elements in column 2: ' num2str(correlation)]);
+
+correlation = [durationEvent, numSimultaneousEvents];
 
