@@ -1,11 +1,33 @@
-function plotCellDistanceNetwork(data_CFU, data_analysis, simultaneousMatrixDelaybyCell2, simultaneousMatrixDelaybyCell_average2)
+function plotCellDistanceNetwork(data_CFU, data_analysis, simultaneousMatrixDelaybyCell, simultaneousMatrixDelaybyCell_average, pwd, AquA_fileName)
     % Function to plot a directed graph representing cell distance networks
+    % and optionally save the resulting figure.
     % Inputs:
     % - data_CFU: Data containing cell coordinates
     % - data_analysis: Analysis data including perivascularCells
     % - simultaneousMatrixDelaybyCell2: Cell array with edge weights
     % - simultaneousMatrixDelaybyCell_average2: Cell array with adjacency matrix values
+
+
+    % ---- Preprocessing ----
+    simultaneousMatrixDelaybyCell_average2 = simultaneousMatrixDelaybyCell_average;  
+    simultaneousMatrixDelaybyCell2 = simultaneousMatrixDelaybyCell;
     
+    % Process each cell to remove zeros
+    for cellX = 1:size(simultaneousMatrixDelaybyCell2) %rows
+        for cellY = 1:size(simultaneousMatrixDelaybyCell2) %columns
+            currentCell = simultaneousMatrixDelaybyCell2{cellX, cellY};
+            if isnumeric(currentCell) % Ensure the cell contains numeric data
+                % Remove zeros and keep non-zero elements
+                simultaneousMatrixDelaybyCell2{cellX, cellY} = currentCell(currentCell ~= 0);
+            end
+            if cellX == cellY
+                simultaneousMatrixDelaybyCell2{cellX, cellY} = [];
+                simultaneousMatrixDelaybyCell_average2{cellX, cellY} = NaN;
+            end
+        end
+    end
+    % ---- End Preprocessing ----
+
     % Extract cell coordinates
     cellCoords = [data_CFU.cfuInfo1(:,1), data_CFU.cfuInfo1(:,3)];
     numCells = size(cellCoords, 1);
@@ -36,15 +58,22 @@ function plotCellDistanceNetwork(data_CFU, data_analysis, simultaneousMatrixDela
     % Identify nodes with single appearance
     endNodes = G.Edges.EndNodes;
     allNodes = endNodes(:);
-    nodeCounts = histcounts(allNodes, 1:(max(allNodes)+1));
-    nodesWithSingleAppearance = find(nodeCounts == 1);
 
-    % Find indices of edges connected to nodes with single appearance
-    rowsWithSingleAppearance = [];
-    for i = 1:length(nodesWithSingleAppearance)
-        node = nodesWithSingleAppearance(i);
-        indices = find(endNodes(:, 1) == node | endNodes(:, 2) == node);
-        rowsWithSingleAppearance = [rowsWithSingleAppearance; indices];
+    % Check if allNodes is empty and skip node processing if true
+    if isempty(allNodes)
+        % Set up figure without processing nodes
+        disp('allNodes is empty, skipping node processing.');
+    else
+        nodeCounts = histcounts(allNodes, 1:(max(allNodes)+1));
+        nodesWithSingleAppearance = find(nodeCounts == 1);
+    
+        % Find indices of edges connected to nodes with single appearance
+        rowsWithSingleAppearance = [];
+        for i = 1:length(nodesWithSingleAppearance)
+            node = nodesWithSingleAppearance(i);
+            indices = find(endNodes(:, 1) == node | endNodes(:, 2) == node);
+            rowsWithSingleAppearance = [rowsWithSingleAppearance; indices];
+        end
     end
 
     % Set up figure
@@ -102,4 +131,24 @@ function plotCellDistanceNetwork(data_CFU, data_analysis, simultaneousMatrixDela
             'FontSize', 12, 'Color', 'k');
     end
     hold off;
+
+    % Save figure if savePath and AquA_fileName are provided
+    if nargin > 4
+        % Set up path
+        fileTemp = extractBefore(AquA_fileName, "_AQuA2");
+        pathTemp = extractBefore(pwd, "3.");
+        
+        % Define subfolder path
+        subfolderDigraphName = 'figures\all cells (except multinucleated)\network_digraph';
+        subfolderDigraphPath = fullfile(pathTemp, subfolderDigraphName);
+        
+        % Create the full file name with path
+        digraphFilename = fullfile(subfolderDigraphPath, strcat(fileTemp, '_digraph.fig'));
+        
+        % Save the figure
+        if ~exist(subfolderDigraphPath, 'dir')
+            mkdir(subfolderDigraphPath); % Create the directory if it does not exist
+        end
+        saveas(digraphFig, digraphFilename);
+    end
 end
