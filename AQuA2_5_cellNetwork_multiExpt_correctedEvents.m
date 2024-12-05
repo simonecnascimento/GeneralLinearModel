@@ -92,13 +92,13 @@ FilesAll = {
 'Pf4Ai162-9_230614_FOV4_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
 'Pf4Ai162-9_230614_FOV5_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat'};
 
-
 %% extract network spatial density
 
 % Initialize a cell array to store the upperTriAverages for each experiment, for distance between cells
 
 allUpperTriValues = cell(length(FilesAll), 1); %distance between pair of cells
-eventDuration_simultanenousEvents_all = cell(length(FilesAll), 1);
+eventDuration_simultaneousEvents_all = cell(length(FilesAll), 1);
+simultaneousMatrixDelaybyCell_average_all = cell(length(FilesAll), 1);
 
 for experiment = 2:length(FilesAll)
     
@@ -192,14 +192,13 @@ for experiment = 2:length(FilesAll)
     data_CFU = load(CFU_FilePath);
 
     % Matrix by event
-    simultaneousMatrix = zeros(numEvents, numEvents);
-    [numRows, numCols] = size(simultaneousMatrix);
-    simultaneousMatrixDelay = zeros(numEvents, numEvents);
+    simultaneousMatrixByEvent = zeros(numEvents, numEvents);
+    [numRows, numCols] = size(simultaneousMatrixByEvent);
+    simultaneousMatrixDelayByEvent = zeros(numEvents, numEvents);
     startingFrame = data_analysis.resultsRaw.ftsTb(3,:); %starting frame of event to compute delay
     
     % Matrix by cell
     numCells = size(data_CFU.cfuInfo1,1);
-    simultaneousMatrixbyCell = zeros(numCells, numCells);
     simultaneousMatrixDelaybyCell = cell(numCells, numCells);
     simultaneousMatrixDelaybyCell_average = cell(numCells, numCells);
 
@@ -326,20 +325,24 @@ for experiment = 2:length(FilesAll)
 %                 disp(['(', num2str(minRows(j)), ', ', num2str(minCols(j)), ')']);
 %             end
         
-            simultaneousMatrix(currentEvent, simultaneousEvent) = 1;
-            simultaneousMatrix(currentEvent, currentEvent) = 1; % Ensure the diagonal is set to 1 (an event is always simultaneous with itself)
-           
+            simultaneousMatrixByEvent(currentEvent, simultaneousEvent) = 1;
+            simultaneousMatrixByEvent(currentEvent, currentEvent) = 1; % Ensure the diagonal is set to 1 (an event is always simultaneous with itself)
+            if ismember(currentEvent, data_analysis.cols_to_delete) % remove 'cols_to_delete' from analysis, it includes eventToDelete and events from multinucleated cells
+                simultaneousMatrixByEvent(currentEvent, :) = 0;
+                simultaneousMatrixByEvent(:, currentEvent) = 0;
+            end
+
             % Calculate delay between current event and 1st simultanous event
-            element = simultaneousMatrix(currentEvent, simultaneousEvent); % Access the current element
+            element = simultaneousMatrixByEvent(currentEvent, simultaneousEvent); % Access the current element
             % Perform operations on 'element'
             %fprintf('Element at (%d, %d): %d\n', currentEvent, simultaneousEvent, element);
             startingFrame_currentEvent = startingFrame{currentEvent};
             startingFrame_simultaneousEvent = startingFrame{simultaneousEvent};
-            delay = startingFrame_currentEvent-startingFrame_simultaneousEvent;
+            delay = startingFrame_simultaneousEvent-startingFrame_currentEvent;
               if delay < 0
                  delay = 0;
               end
-            simultaneousMatrixDelay(currentEvent,simultaneousEvent) = delay;
+            simultaneousMatrixDelayByEvent(currentEvent,simultaneousEvent) = delay;
 
             % Check if the cell already contains data
             if isempty(simultaneousMatrixDelaybyCell{cellNumber_event, cellNumber_all})
@@ -363,9 +366,9 @@ for experiment = 2:length(FilesAll)
         networkData.simultaneousEvents_network_corrected{currentEvent} = simultaneousEvents_network_corrected;
           
         % Check if any elements in simultaneousEvents_network_corrected needs to be deleted
-        if any(ismember(simultaneousEvents_network_corrected, data_analysis.eventsToDelete))
-            % Keep only elements that are not in eventsToDelete
-            simultaneousEvents_network_corrected = simultaneousEvents_network_corrected(~ismember(simultaneousEvents_network_corrected, data_analysis.eventsToDelete));
+        if any(ismember(simultaneousEvents_network_corrected, data_analysis.cols_to_delete))
+            % Keep only elements that are not in cols_to_delete
+            simultaneousEvents_network_corrected = simultaneousEvents_network_corrected(~ismember(simultaneousEvents_network_corrected, data_analysis.cols_to_delete));
             networkData.simultaneousEvents_network_corrected{currentEvent} = simultaneousEvents_network_corrected;
         end
 
@@ -533,8 +536,9 @@ for experiment = 2:length(FilesAll)
     % Get events duration and simultaneous events
     eventDuration = table2cell(data_analysis.resultsRaw("Curve - Duration 10% to 10%","ftsTb"));
     eventDuration = eventDuration{1,1}';
-    eventDuration_simultaneousEvents = [eventDuration,simultaneousEvents_all]; 
-    eventDuration_simultanenousEvents_all{experiment} = eventDuration_simultaneousEvents; % Store values for this experiment
+    simultaneousEvents_experiment = networkData.simultaneousEvents_network_corrected(:);
+    eventDuration_simultaneousEvents = [eventDuration,simultaneousEvents_experiment]; 
+    eventDuration_simultaneousEvents_all{experiment} = eventDuration_simultaneousEvents; % Store values for this experiment
 
     % MATRIX for all cells (distance and delay)
     pairwiseDistanceMatrix = nan(numCells, numCells); % Initialize with NaN
@@ -595,30 +599,179 @@ for experiment = 2:length(FilesAll)
         end
     end
 
-%     % Plot digraph with cell correlation
-%     simultaneousMatrixDelaybyCell_average2 = cell2mat(simultaneousMatrixDelaybyCell_average);
-%     graphAverage = digraph(simultaneousMatrixDelaybyCell_average);
-%     plot(graphAverage)
-% 
-%     % Check if the matrix is symmetric
-%     isSymmetric = isequal(simultaneousMatrixDelaybyCell_average, simultaneousMatrixDelaybyCell_average');
-%     if isSymmetric
-%         disp('The matrix is symmetric.');
-%     else
-%         disp('The matrix is not symmetric.'); %likely means that the delay relationships between cells are directional 
-%     end
-% 
-%     % Replace NaN with 0 for graph representation
-%     adjMatrix = simultaneousMatrixDelaybyCell_average2;
-%     adjMatrix(isnan(adjMatrix)) = 0;
-%     
-%     % Create a directed graph
-%     G = digraph(adjMatrix);
-%     
-%     % Plot the directed graph
-%     figure;
-%     plot(G, 'EdgeLabel', G.Edges.Weight);
-%     title('Directed Network of Cells Based on Average Delays');
+    % Cell coordination and network analysis
+
+    % Remove non-zero elements of matrix delay by cell
+    simultaneousMatrixDelaybyCell_average2 = simultaneousMatrixDelaybyCell_average;  
+    simultaneousMatrixDelaybyCell2 = simultaneousMatrixDelaybyCell;
+    
+    % Process each cell to remove zeros
+    for cellX = 1:size(simultaneousMatrixDelaybyCell2) %rows
+        for cellY = 1:size(simultaneousMatrixDelaybyCell2) %columns
+            currentCell = simultaneousMatrixDelaybyCell2{cellX, cellY};
+            if isnumeric(currentCell) % Ensure the cell contains numeric data
+                % Remove zeros and keep non-zero elements
+                simultaneousMatrixDelaybyCell2{cellX, cellY} = currentCell(currentCell ~= 0);
+            end
+            if cellX == cellY
+                simultaneousMatrixDelaybyCell2{cellX, cellY} = [];
+                simultaneousMatrixDelaybyCell_average2{cellX, cellY} = NaN;
+            end
+        end
+    end
+
+    % cells coordinates
+    cellCoords = [data_CFU.cfuInfo1(:,1), data_CFU.cfuInfo1(:,3)];
+    
+    centers_allCells = [];
+    for i = 1:numCells
+        [rows1, cols1] = find(cellCoords{i,2} ~= 0); % Extract coordinates of non-zero elements in the i-th matrix
+        centers = [mean(rows1), mean(cols1)]; % Compute the center coordinates for cells in the i-th matrix
+        centers_allCells = [centers_allCells; centers];
+    end
+    
+    % nodes, edges and weights
+    edgeWeights = simultaneousMatrixDelaybyCell2;
+    connectionsMatrix = simultaneousMatrixDelaybyCell_average2;
+    
+    % Calculate edge weights based on the number of elements in each cell
+    numericWeights = cellfun(@(c) numel(c), edgeWeights);
+    
+    adjMatrix = cell2mat(connectionsMatrix);
+    adjMatrix(isnan(adjMatrix)) = 0; % Replace NaN with 0 for adjacency matrix
+    adjMatrix(numericWeights < 2) = 0; % Remove edges with weights < 2
+    
+    % Create directed graph with weights proportional to the number of elements in each cell
+    G = digraph(adjMatrix);
+
+    % Find the in-degree and out-degree for each node
+    inDegrees = indegree(G);
+    outDegrees = outdegree(G);
+    % Find the nodes with a single incoming edge (in-degree == 1)
+    nodesWithSingleEdge = find(inDegrees == 1 | outDegrees == 1);
+    disp(nodesWithSingleEdge);
+
+    % Example: Extract the EndNodes matrix
+    endNodes = G.Edges.EndNodes;
+    
+    % Count the occurrences of each node in the EndNodes table
+    allNodes = endNodes(:); % Flatten into a single list of nodes
+    nodeCounts = histcounts(allNodes, 1:(max(allNodes)+1)); % Count occurrences of each node
+    
+    % Find nodes that appear only once
+    nodesWithSingleAppearance = find(nodeCounts == 1);
+    
+    % Display the nodes with a single edge (either incoming or outgoing)
+    disp('Nodes with a single edge:');
+    disp(nodesWithSingleAppearance);
+
+
+    disp('Pausing to examine variable G.Edges');
+    keyboard;
+    
+    % Prompt user to input the rows of edges to make dashed
+    singleNodes = input('Enter the indices of the edges to display as dashed lines (e.g., [1, 2, 5]): ');
+ 
+    % Set up figure with a white background
+    digraphFig = figure;
+    axesHandle = axes; % Create an explicit axes object
+    set(axesHandle, 'Color', 'w'); % Set axes background to white
+    hold(axesHandle, 'on'); % Enable adding multiple elements to axes
+    
+    % Plot the graph on the same axes
+    % Plot graph with specified node coordinates
+    h = plot(G, 'XData', centers_allCells(:, 2), 'YData', centers_allCells(:, 1));
+    h.MarkerSize = 5; % Adjust the size as needed
+    h.ArrowSize = 30;
+    h.NodeFontSize = 25;
+    h.EdgeColor = [0.7, 0.7, 0.7]; % Light grey color
+    
+    % Set line thickness for edges with weights >= 2
+    validWeights = numericWeights(numericWeights >= 2); % Keep weights >= 2
+    %h.LineWidth = validWeights / max(validWeights(:)) * 4;
+    h.LineWidth = validWeights * 2;
+    
+    % Assign colors to nodes based on their types
+    perivascular = data_analysis.perivascularCells;
+    nodeTypes = [];
+    for peri = 1:numCells
+        if ismember(peri, perivascular)
+            type = 0;
+        else
+            type = 2;
+        end
+        nodeTypes = [nodeTypes; type];
+    end
+      
+    % Type 0 = red), Type 2 = blue
+    nodeColors = zeros(size(nodeTypes)); % Default to red (index 1 in colormap)
+    nodeColors(nodeTypes == 2) = 2; % Assign blue (index 2 in colormap)
+    
+    % Apply colors to nodes
+    colormap(axesHandle, [1 0 0; 0 0 1]); % Blue for type 2, Red for type 0, % Explicitly apply colormap to the graph
+    h.NodeCData = nodeColors;
+    
+    % Adjust axis and orientation
+    title('Cell Distance Network on Image Frame');
+    axis on;
+    set(gca, 'YDir', 'reverse'); % Reverse Y-axis so 0,0 is at the top-left
+    xlim([1, 626]); % Constrain to image width
+    ylim([1, 422]); % Constrain to image height
+    
+    % Display edge weights
+    for i = 1:numedges(G)
+        % Get the source and target node for each edge
+        source = G.Edges.EndNodes(i, 1);
+        target = G.Edges.EndNodes(i, 2);
+        
+        % Get the coordinates of the source and target nodes
+        sourceCoord = h.XData(source);
+        targetCoord = h.XData(target);
+        ySourceCoord = h.YData(source);
+        yTargetCoord = h.YData(target);
+        
+        % Calculate the midpoint of the edge
+        midpointX = (sourceCoord + targetCoord) / 2;
+        midpointY = (ySourceCoord + yTargetCoord) / 2;
+        
+        % Get the weight for this edge from numericWeights
+        edgeWeight = G.Edges.Weight(i);  % Get the weight of the i-th edge
+
+        % Check if the edge is in the user-specified list for dashed lines
+        % Example: Let's assume userInput is the list of indices for dashed lines
+        if ismember(i, singleNodes)  % Check if current edge index is in the userInput
+            % Plot the edge with a dashed line style
+            line([sourceCoord, targetCoord], [ySourceCoord, yTargetCoord], 'LineStyle', '--', 'LineWidth', 2, 'Color', 'k');
+        end
+
+        % Round the edge weight to the nearest integer
+        edgeWeightInt = round(edgeWeight);
+            
+        % Display the weight at the midpoint of the edge
+        text(midpointX, midpointY, num2str(edgeWeightInt), 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'FontSize', 12, 'Color', 'k');
+    end
+    %axis off;
+
+    hold off;
+
+    % Set up path
+    currentFolder = pwd;
+    fileTemp = extractBefore(AquA_fileName, "_AQuA2");
+    pathTemp = extractBefore(currentFolder, "3."); 
+
+    % Save digraph
+    subfolderDigraphName = 'figures\all cells (except multinucleated)\network_digraph'; % Define the subfolder name
+    subfolderDigraphPath = fullfile(pathTemp, subfolderDigraphName); % Create the full path for the subfolder
+    % Create the full file name with path
+    digraphFilename = fullfile(subfolderDigraphPath, strcat(fileTemp, '_digraph.fig'));
+    saveas(digraphFig, digraphFilename);
+
+    % Save network data
+    subfolderNetworkName = '4._network_propagation.mat'; % Define the subfolder name
+    subfolderNetworkPath = fullfile(pathTemp, subfolderNetworkName); % Create the full path for the subfolder
+    % Create the full file name with path
+    networkFilename = fullfile(subfolderNetworkPath, strcat(fileTemp, '_network_propagation.mat'));
+    save(networkFilename);
 
 end
 
@@ -645,46 +798,26 @@ title('Distance Metrics for Cells with Concurrent Activity');
 xlabel('Distance (um)');
 ylabel('Number of cell pairs');
 
-%% correlation between duration of events and number of simultaneous events
-
-eventDuration = table2cell(data_analysis.resultsRaw("Curve - Duration 10% to 10%","ftsTb"));
-eventDuration = eventDuration{1,1}';
-
-eventDuration_simultaneousEvents = [eventDuration,simultaneousEvents_all];
-
-% Calculate the number of elements in each cell array in column2
-numElements = cellfun(@numel, eventDuration_simultaneousEvents(:,2));  % This gives the length of each array in column2
-
-duration = cell2mat(eventDuration_simultaneousEvents(:,1));
-% Compute the correlation between column1 and the number of elements in column2
-correlation = corr(duration(:), numElements(:));  % Ensure both are column vectors
-
-% Display the result
-disp(['Correlation between column1 and the number of elements in column2: ' num2str(correlation)]);
-
 %% Correlation between duration of events and number of simultaneous events
-test = eventDuration_simultaneousEvents_all(2:37,1);
+eventDuration_simultaneousEvents_allExperiments = eventDuration_simultaneousEvents_all(1,2:37);%remove experiment 1 because it only has 1 cell
 
-test2 = [];
+eventDuration_simultaneousEvents_allExperiments2 = [];
 
-for x = 1:size(test,1)
-    data = test{x};
-    test2 = [test2;data];
+for expt = 1:size(eventDuration_simultaneousEvents_allExperiments,2)
+    data = eventDuration_simultaneousEvents_allExperiments{expt};
+    eventDuration_simultaneousEvents_allExperiments2 = [eventDuration_simultaneousEvents_allExperiments2;data];
 end
 
-% Assuming `data` is your input where column 1 has values and column 2 has elements (e.g., arrays or cells)
-
-% Extract column 1
-durationEvent = cell2mat(test2(:, 1)); % Convert to numeric if it's not already
+durationEvent = cell2mat(eventDuration_simultaneousEvents_allExperiments2(:, 1)); % Convert to numeric if it's not already
 
 % Compute the number of elements in column 2 for each row
-numSimultaneousEvents = cellfun(@numel, test2(:, 2)); % Use `numel` to count elements in each array/cell
+numSimultaneousEvents = cellfun(@numel, eventDuration_simultaneousEvents_allExperiments2(:, 2)); % Use `numel` to count elements in each array/cell
 
-% Calculate the correlation
+% Correlation
 correlation = corr(durationEvent, numSimultaneousEvents, 'Rows', 'complete');
-
-% Display the result
 disp(['Correlation between column 1 and number of elements in column 2: ' num2str(correlation)]);
 
 correlation = [durationEvent, numSimultaneousEvents];
-
+scatter(correlation(:,1),correlation(:,2))
+xlabel('Event Duration');
+ylabel('Number of Simultaneous Events');
