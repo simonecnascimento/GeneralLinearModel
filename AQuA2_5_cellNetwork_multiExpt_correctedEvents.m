@@ -126,14 +126,13 @@ for experiment = 2:length(FilesAll)
     fullFilePath = fullfile(aqua_directory, AquA_fileName);
     data_aqua = load(fullFilePath);
 
+
     % FILL TABLE WITH CELL NUMBERS, MAPS, AND EVENTS PROPAGATIONS
 
     % get network data from aqua
     nSimultanousEvents = num2cell(data_aqua.res.fts1.networkAll.nOccurSameTime);
     simultaneousEvents_all = data_aqua.res.fts1.networkAll.occurSameTimeList;
-
-    % Define the number of events
-    numEvents = height(simultaneousEvents_all);
+    numEvents = height(simultaneousEvents_all); % Define the number of events
 
     % for current event
     propagationMap_event = cell(numEvents,1);
@@ -262,69 +261,9 @@ for experiment = 2:length(FilesAll)
             cellMap_all = data_CFU.cfuInfo1{cellNumber_all, 3};
             networkData.cellMap_all{currentEvent}{end+1} = cellMap_all;  
 
-%             %eventNetwork_cellMap_all
-%    
-%             %Cell Map
-%             tempMap = networkData.cellMap_all{currentEvent}{simultaneousEvent_all};
-%             nonZeroMask = tempMap > 0;
-%             countTempMap = nnz((tempMap));
-%             imshow(nonZeroMask);
-%             
-%             %Event Propagation
-%             tempPropagation = networkData.propagationMap_all{currentEvent}{simultaneousEvent_all};  
-%             countTempPropagation = nnz(~isnan(tempPropagation));
-%             
-%             %Get the linear indices of non-zero elements in tempMap
-%             nonZeroIndicesTempMap = find(tempMap ~= 0);
-%             
-%             %Get the linear indices of non-NaN elements in tempPropagation
-%             nonNaNIndicesTempPropagation = find(~isnan(tempPropagation));
-%             
-%             %Ensure both have the same number of elements
-%             if length(nonZeroIndicesTempMap) ~= length(nonNaNIndicesTempPropagation)
-%                 error('The number of non-zero elements in temp must equal the number of non-NaN elements in matrix.');
-%             end
-%             
-%             %Create a new variable to hold the result
-%             newTempMap = tempMap;
-%             
-%             %Insert the values from matrix tempPropagation into the newTemp at the corresponding positions
-%             newTempMap(nonZeroIndicesTempMap) = tempPropagation(nonNaNIndicesTempPropagation);
-%             
-%             %Replace all zeros with NaN in newTempMap
-%             newTempMap(newTempMap == 0) = NaN;
-% 
-%             %Substitute networkData table
-%             networkData.eventNetwork_cellMap_all{currentEvent}{end+1} = newTempMap; 
-%             
-%             %Plot image of eventNetwork_cellMap_all
-%             imagesc(newTempMap)
-%             matrixTemp = newTempMap;
-%             
-%             %Find the maximum value
-%             maxValue = max(matrixTemp(:));
-%             Find all positions of the maximum value
-%             [maxRows, maxCols] = find(matrixTemp == maxValue);
-%             
-%             %Find the minimum value
-%             minValue = min(matrixTemp(:));
-%             Find all positions of the minimum value
-%             [minRows, minCols] = find(matrixTemp == minValue);
-%             
-%             %Display the results for maximum value
-%             disp(['Maximum value: ', num2str(maxValue)]);
-%             disp('Positions of max value:');
-%             for j = 1:length(maxRows)
-%                 disp(['(', num2str(maxRows(j)), ', ', num2str(maxCols(j)), ')']);
-%             end
-%             
-%             %Display the results for minimum value
-%             disp(['Minimum value: ', num2str(minValue)]);
-%             disp('Positions of min value:');
-%             for j = 1:length(minRows)
-%                 disp(['(', num2str(minRows(j)), ', ', num2str(minCols(j)), ')']);
-%             end
-        
+%             % Plot image of propagation within cell map
+%             [networkData, newTempMap] = propagationCellMap(networkData, currentEvent, a);
+
             simultaneousMatrixByEvent(currentEvent, simultaneousEvent) = 1;
             simultaneousMatrixByEvent(currentEvent, currentEvent) = 1; % Ensure the diagonal is set to 1 (an event is always simultaneous with itself)
             if ismember(currentEvent, data_analysis.cols_to_delete) % remove 'cols_to_delete' from analysis, it includes eventToDelete and events from multinucleated cells
@@ -430,49 +369,8 @@ for experiment = 2:length(FilesAll)
             networkData.simultaneousEvents_network_corrected{currentEvent}(indicesToRemove(i)) = [];
         end
 
-        % COMBINE CELL MAPS 
-    
-        cellNumbers = num2cell(networkData{currentEvent, 'cellNumber_all'}{1}); % Assuming cellNumber_all is a cell array
-        cellMaps = networkData{currentEvent, 'cellMap_all'}{1}; % cellMap_all might already be a cell array
-    
-        if iscell(cellNumbers)
-            % Flatten the cell array and find unique numbers
-            cellNumbers = [cellNumbers{:}];
-        end
-        
-        % Remove duplicates in cellNumbers
-        [uniqueCellNumbers, ia] = unique(cellNumbers, 'stable');
-        
-        % Extract corresponding cellMaps for unique cellNumbers
-        cleanedCellMaps = cellMaps(ia);
-    
-        % Update the cleaned table
-        networkData{currentEvent, 'cellNumber_all_unique'} = {uniqueCellNumbers};
-        networkData{currentEvent, 'cellMap_all_unique'}{:} = cleanedCellMaps;
-    
-        % Initialize the combined matrix with zeros
-        combinedMatrix = zeros(size(cleanedCellMaps{1}));
-    
-        % Loop over each cellMap and combine non-zero values
-        for k = 1:numel(cleanedCellMaps)
-            currentCellMap = cleanedCellMaps{k};
-            % Create binary mask for non-zero elements
-            currentMask = currentCellMap ~= 0;
-            
-            % Combine non-zero values into the combinedMatrix
-            combinedMatrix(currentMask) = currentCellMap(currentMask);
-        end
-%         figure;
-%         imshow(combinedMatrix, []); % Display the combined matrix
-%         title('Combined Non-Zero Values from All Cell Maps');
-    
-        networkData.eventNetwork_cellMap_all{currentEvent} = combinedMatrix;
-    
-        % Compute the shortest distance
-        pairwiseDistances = computePairwiseCenterDistances(cleanedCellMaps);
-        networkData.shortestDistanceBetweenCenters{currentEvent} = pairwiseDistances;
-        % Create heatmap of the distance matrix
-        %createHeatmap(pairwiseDistances);
+        % Combine cell maps
+        [networkData, combinedMatrix, pairwiseDistances] = combineCellMaps(networkData, currentEvent);
     end
 
     % Get distribution of distances between pair of cells
@@ -539,6 +437,10 @@ for experiment = 2:length(FilesAll)
     simultaneousEvents_experiment = networkData.simultaneousEvents_network_corrected(:);
     eventDuration_simultaneousEvents = [eventDuration,simultaneousEvents_experiment]; 
     eventDuration_simultaneousEvents_all{experiment} = eventDuration_simultaneousEvents; % Store values for this experiment
+    % remove cols_to_delete from analysis
+    if ~isempty(data_analysis.cols_to_delete)
+        eventDuration_simultaneousEvents_all{experiment}(data_analysis.cols_to_delete, :) = [];
+    end
 
     % MATRIX for all cells (distance and delay)
     pairwiseDistanceMatrix = nan(numCells, numCells); % Initialize with NaN
@@ -547,9 +449,8 @@ for experiment = 2:length(FilesAll)
     for cell1 = 1:numCells
         for cell2 = 1:numCells
 
-            % Distance
             % Retrieve the cell numbers
-            cellNumber_matrix = [cell1,cell2];
+            cellNumber_matrix = [cell1,cell2]; 
 
             % Retrieve the cell maps for the two cells
             cellMap1 = data_CFU.cfuInfo1{cell1, 3};
@@ -599,174 +500,12 @@ for experiment = 2:length(FilesAll)
         end
     end
 
-    % Cell coordination and network analysis
-
-    % Remove non-zero elements of matrix delay by cell
-    simultaneousMatrixDelaybyCell_average2 = simultaneousMatrixDelaybyCell_average;  
-    simultaneousMatrixDelaybyCell2 = simultaneousMatrixDelaybyCell;
-    
-    % Process each cell to remove zeros
-    for cellX = 1:size(simultaneousMatrixDelaybyCell2) %rows
-        for cellY = 1:size(simultaneousMatrixDelaybyCell2) %columns
-            currentCell = simultaneousMatrixDelaybyCell2{cellX, cellY};
-            if isnumeric(currentCell) % Ensure the cell contains numeric data
-                % Remove zeros and keep non-zero elements
-                simultaneousMatrixDelaybyCell2{cellX, cellY} = currentCell(currentCell ~= 0);
-            end
-            if cellX == cellY
-                simultaneousMatrixDelaybyCell2{cellX, cellY} = [];
-                simultaneousMatrixDelaybyCell_average2{cellX, cellY} = NaN;
-            end
-        end
-    end
-
-    % cells coordinates
-    cellCoords = [data_CFU.cfuInfo1(:,1), data_CFU.cfuInfo1(:,3)];
-    
-    centers_allCells = [];
-    for i = 1:numCells
-        [rows1, cols1] = find(cellCoords{i,2} ~= 0); % Extract coordinates of non-zero elements in the i-th matrix
-        centers = [mean(rows1), mean(cols1)]; % Compute the center coordinates for cells in the i-th matrix
-        centers_allCells = [centers_allCells; centers];
-    end
-    
-    % nodes, edges and weights
-    edgeWeights = simultaneousMatrixDelaybyCell2;
-    connectionsMatrix = simultaneousMatrixDelaybyCell_average2;
-    
-    % Calculate edge weights based on the number of elements in each cell
-    numericWeights = cellfun(@(c) numel(c), edgeWeights);
-    
-    adjMatrix = cell2mat(connectionsMatrix);
-    adjMatrix(isnan(adjMatrix)) = 0; % Replace NaN with 0 for adjacency matrix
-    adjMatrix(numericWeights < 2) = 0; % Remove edges with weights < 2
-    
-    % Create directed graph with weights proportional to the number of elements in each cell
-    G = digraph(adjMatrix);
-
-    % Find the in-degree and out-degree for each node
-    inDegrees = indegree(G);
-    outDegrees = outdegree(G);
-    % Find the nodes with a single incoming edge (in-degree == 1)
-    nodesWithSingleEdge = find(inDegrees == 1 | outDegrees == 1);
-    disp(nodesWithSingleEdge);
-
-    % Example: Extract the EndNodes matrix
-    endNodes = G.Edges.EndNodes;
-    
-    % Count the occurrences of each node in the EndNodes table
-    allNodes = endNodes(:); % Flatten into a single list of nodes
-    nodeCounts = histcounts(allNodes, 1:(max(allNodes)+1)); % Count occurrences of each node
-    
-    % Find nodes that appear only once
-    nodesWithSingleAppearance = find(nodeCounts == 1);
-    
-    % Display the nodes with a single edge (either incoming or outgoing)
-    disp('Nodes with a single edge:');
-    disp(nodesWithSingleAppearance);
-
-
-    disp('Pausing to examine variable G.Edges');
-    keyboard;
-    
-    % Prompt user to input the rows of edges to make dashed
-    singleNodes = input('Enter the indices of the edges to display as dashed lines (e.g., [1, 2, 5]): ');
- 
-    % Set up figure with a white background
-    digraphFig = figure;
-    axesHandle = axes; % Create an explicit axes object
-    set(axesHandle, 'Color', 'w'); % Set axes background to white
-    hold(axesHandle, 'on'); % Enable adding multiple elements to axes
-    
-    % Plot the graph on the same axes
-    % Plot graph with specified node coordinates
-    h = plot(G, 'XData', centers_allCells(:, 2), 'YData', centers_allCells(:, 1));
-    h.MarkerSize = 5; % Adjust the size as needed
-    h.ArrowSize = 30;
-    h.NodeFontSize = 25;
-    h.EdgeColor = [0.7, 0.7, 0.7]; % Light grey color
-    
-    % Set line thickness for edges with weights >= 2
-    validWeights = numericWeights(numericWeights >= 2); % Keep weights >= 2
-    %h.LineWidth = validWeights / max(validWeights(:)) * 4;
-    h.LineWidth = validWeights * 2;
-    
-    % Assign colors to nodes based on their types
-    perivascular = data_analysis.perivascularCells;
-    nodeTypes = [];
-    for peri = 1:numCells
-        if ismember(peri, perivascular)
-            type = 0;
-        else
-            type = 2;
-        end
-        nodeTypes = [nodeTypes; type];
-    end
-      
-    % Type 0 = red), Type 2 = blue
-    nodeColors = zeros(size(nodeTypes)); % Default to red (index 1 in colormap)
-    nodeColors(nodeTypes == 2) = 2; % Assign blue (index 2 in colormap)
-    
-    % Apply colors to nodes
-    colormap(axesHandle, [1 0 0; 0 0 1]); % Blue for type 2, Red for type 0, % Explicitly apply colormap to the graph
-    h.NodeCData = nodeColors;
-    
-    % Adjust axis and orientation
-    title('Cell Distance Network on Image Frame');
-    axis on;
-    set(gca, 'YDir', 'reverse'); % Reverse Y-axis so 0,0 is at the top-left
-    xlim([1, 626]); % Constrain to image width
-    ylim([1, 422]); % Constrain to image height
-    
-    % Display edge weights
-    for i = 1:numedges(G)
-        % Get the source and target node for each edge
-        source = G.Edges.EndNodes(i, 1);
-        target = G.Edges.EndNodes(i, 2);
-        
-        % Get the coordinates of the source and target nodes
-        sourceCoord = h.XData(source);
-        targetCoord = h.XData(target);
-        ySourceCoord = h.YData(source);
-        yTargetCoord = h.YData(target);
-        
-        % Calculate the midpoint of the edge
-        midpointX = (sourceCoord + targetCoord) / 2;
-        midpointY = (ySourceCoord + yTargetCoord) / 2;
-        
-        % Get the weight for this edge from numericWeights
-        edgeWeight = G.Edges.Weight(i);  % Get the weight of the i-th edge
-
-        % Check if the edge is in the user-specified list for dashed lines
-        % Example: Let's assume userInput is the list of indices for dashed lines
-        if ismember(i, singleNodes)  % Check if current edge index is in the userInput
-            % Plot the edge with a dashed line style
-            line([sourceCoord, targetCoord], [ySourceCoord, yTargetCoord], 'LineStyle', '--', 'LineWidth', 2, 'Color', 'k');
-        end
-
-        % Round the edge weight to the nearest integer
-        edgeWeightInt = round(edgeWeight);
-            
-        % Display the weight at the midpoint of the edge
-        text(midpointX, midpointY, num2str(edgeWeightInt), 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'FontSize', 12, 'Color', 'k');
-    end
-    %axis off;
-
-    hold off;
-
-    % Set up path
-    currentFolder = pwd;
-    fileTemp = extractBefore(AquA_fileName, "_AQuA2");
-    pathTemp = extractBefore(currentFolder, "3."); 
-
-    % Save digraph
-    subfolderDigraphName = 'figures\all cells (except multinucleated)\network_digraph'; % Define the subfolder name
-    subfolderDigraphPath = fullfile(pathTemp, subfolderDigraphName); % Create the full path for the subfolder
-    % Create the full file name with path
-    digraphFilename = fullfile(subfolderDigraphPath, strcat(fileTemp, '_digraph.fig'));
-    saveas(digraphFig, digraphFilename);
+    % Cell network and directional graph
+    plotCellDistanceNetwork(data_CFU, data_analysis, simultaneousMatrixDelaybyCell, simultaneousMatrixDelaybyCell_average, pwd, AquA_fileName);
 
     % Save network data
+    fileTemp = extractBefore(AquA_fileName, "_AQuA2");
+    pathTemp = extractBefore(pwd, "3."); 
     subfolderNetworkName = '4._network_propagation.mat'; % Define the subfolder name
     subfolderNetworkPath = fullfile(pathTemp, subfolderNetworkName); % Create the full path for the subfolder
     % Create the full file name with path
@@ -799,6 +538,17 @@ xlabel('Distance (um)');
 ylabel('Number of cell pairs');
 
 %% Correlation between duration of events and number of simultaneous events
+
+test_eventsToDelete = eventDuration_simultaneousEvents_all;
+for experiment = 5:length(FilesAll)    
+    % Load analysis .mat file
+    data_analysis = load(FilesAll{experiment});
+    % Remove cols_to_delete
+    if ~isempty(data_analysis.cols_to_delete)
+        test_eventsToDelete{experiment}(data_analysis.cols_to_delete, :) = [];
+    end
+end
+
 eventDuration_simultaneousEvents_allExperiments = eventDuration_simultaneousEvents_all(1,2:37);%remove experiment 1 because it only has 1 cell
 
 eventDuration_simultaneousEvents_allExperiments2 = [];
