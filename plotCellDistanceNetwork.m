@@ -1,4 +1,4 @@
-function plotCellDistanceNetwork(data_CFU, data_analysis, simultaneousMatrixDelaybyCell, simultaneousMatrixDelaybyCell_average, pwd, AquA_fileName)
+function [adjMatrix, centers_allCells, G, rowsWithSingleAppearance, nodeDegree] = plotCellDistanceNetwork(data_CFU, data_analysis, simultaneousMatrixDelaybyCell, simultaneousMatrixDelaybyCell_average, pwd, AquA_fileName)
     % Function to plot a directed graph representing cell distance networks
     % and optionally save the resulting figure.
     % Inputs:
@@ -50,10 +50,13 @@ function plotCellDistanceNetwork(data_CFU, data_analysis, simultaneousMatrixDela
     % Process adjacency matrix
     adjMatrix = cell2mat(connectionsMatrix);
     adjMatrix(isnan(adjMatrix)) = 0; % Replace NaN with 0
-    adjMatrix(numericWeights < 2) = 0; % Remove edges with weights < 2
+    %adjMatrix(numericWeights < 2) = 0; % Remove edges with weights < 2
 
     % Create directed graph
     G = digraph(adjMatrix);
+    
+    % Get node degree
+    nodeDegree = outdegree(G);
 
     % Identify nodes with single appearance
     endNodes = G.Edges.EndNodes;
@@ -84,25 +87,37 @@ function plotCellDistanceNetwork(data_CFU, data_analysis, simultaneousMatrixDela
     
     % Plot graph
     h = plot(G, 'XData', centers_allCells(:, 2), 'YData', centers_allCells(:, 1));
-    h.MarkerSize = 5;
-    h.ArrowSize = 30;
-    h.NodeFontSize = 25;
-    h.EdgeColor = [0.7, 0.7, 0.7];
+    h.MarkerSize = 7;
+    h.ArrowSize = 10;
+    h.NodeFontSize = 15;
+    h.EdgeColor = [0.4, 0.4, 0.4];
 
-    % Set line thickness for edges
-    validWeights = numericWeights(numericWeights >= 2);
-    h.LineWidth = validWeights * 2;
+    % Assign node colors based on degree
+    h.NodeCData = nodeDegree; % NodeCData will color nodes by their degree
+    colormap(axesHandle, spring); % Colormap for degree visualization
+    colorbar; % Add a colorbar for reference
 
-    % Assign node colors
+%     % Set line thickness for edges
+%     validWeights = numericWeights(numericWeights >= 2);
+%     h.LineWidth = validWeights * 2;
+
+    % Assign node shape based on type of cell (perivascular vs non-perivascular)
     perivascular = data_analysis.perivascularCells;
-    nodeTypes = ismember(1:numCells, perivascular);
-    nodeColors = 2 * (~nodeTypes); % Red (0) or Blue (2)
-    colormap(axesHandle, [1 0 0; 0 0 1]);
-    h.NodeCData = nodeColors;
+    nonPerivascular = setdiff(1:numCells, perivascular); % Other nodes
+
+    % Highlight perivascular nodes (stars)
+    highlight(h, perivascular, 'Marker', 'p', 'MarkerSize', 10);  
+    % Highlight non-perivascular nodes (round markers)
+    highlight(h, nonPerivascular, 'Marker', 'o', 'MarkerSize', 7); 
+
+%     nodeTypes = ismember(1:numCells, perivascular);
+%     nodeColors = 2 * (~nodeTypes); % Red (0) or Blue (2)
+%     colormap(axesHandle, [1 0 0; 0 0 1]);
+%     h.NodeCData = nodeColors;
 
     % Adjust axis
     title('Cell Distance Network on Image Frame');
-    set(gca, 'YDir', 'reverse');
+    set(gca, 'YDir', 'reverse'); % 'reverse'
     xlim([1, 626]);
     ylim([1, 422]);
 
@@ -122,13 +137,13 @@ function plotCellDistanceNetwork(data_CFU, data_analysis, simultaneousMatrixDela
         % Check if edge is dashed
         if ismember(i, rowsWithSingleAppearance)
             line([sourceCoord, targetCoord], [ySourceCoord, yTargetCoord], ...
-                'LineStyle', '--', 'LineWidth', 2, 'Color', 'k');
+                'LineStyle', '--', 'LineWidth', 2, 'Color', [0.4, 0.4, 0.4]);
         end
 
         % Display weight
-        text(midpointX, midpointY, num2str(edgeWeightInt), ...
-            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', ...
-            'FontSize', 12, 'Color', 'k');
+%         text(midpointX, midpointY, num2str(edgeWeightInt), ...
+%             'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', ...
+%             'FontSize', 12, 'Color', 'k');
     end
     hold off;
 
@@ -143,7 +158,7 @@ function plotCellDistanceNetwork(data_CFU, data_analysis, simultaneousMatrixDela
         subfolderDigraphPath = fullfile(pathTemp, subfolderDigraphName);
         
         % Create the full file name with path
-        digraphFilename = fullfile(subfolderDigraphPath, strcat(fileTemp, '_digraph.fig'));
+        digraphFilename = fullfile(subfolderDigraphPath, strcat(fileTemp, '_diGraph.fig'));
         
         % Save the figure
         if ~exist(subfolderDigraphPath, 'dir')
