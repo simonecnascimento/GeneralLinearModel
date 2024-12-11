@@ -9,7 +9,7 @@ filename = 'Pf4Ai162-20_240229_FOV1_reg_green_Substack(1-927)';
 resultsRaw = res.featureTable1;
 resultsExpanded_propagation = cell2table(resultsRaw.ftsTb); %expanded events without features column
        
-% Delete columns = perivascular and multinucleated cells and their respective events
+% Delete columns = multinucleated cells and their respective events
 cols_to_delete = input('Enter columns to delete (e.g., [1,2] ): ');
 
 totalCells = input('Enter total number of remaining cells: ');

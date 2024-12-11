@@ -8,9 +8,9 @@ clear all;
 clc;
 
 spreadsheetPath = 'R:\Levy Lab\2photon\ImagingDatasets_Simone_241017.xlsx';
-sheet = 'MacrophageCSD';
+sheet = 'Macrophage';
 dataTable = readcell(spreadsheetPath, 'sheet',sheet);  
-colNames = dataTable(2,:); %remove all info and leave just column names
+colNames = dataTable(1,:); %remove all info and leave just column names
 dataTable(1,:) = []; %remove column names
 
 dataCol = struct( ...
@@ -23,7 +23,7 @@ dataCol = struct( ...
 dataTable(:,dataCol.date) = cellfun(@num2str, dataTable(:,dataCol.date), 'UniformOutput',false); 
 
 % --- Specify the row number of interest
-rowOfInterest = 2; 
+rowOfInterest = 361; 
 
 % Extract information from the specified row
 mouse = dataTable{rowOfInterest, dataCol.mouse};
@@ -103,7 +103,7 @@ for s = 1:numel(contents)
 
         % Create a table (finalResults) with final results of all cells and median of features
         % Features to remove 
-        featuresIndicesToDelete = [1,3,7,15:24];
+        featuresIndicesToDelete = [1,3,7,15,16,17,18,19,20,21,22,23,24];
         
         %Get metadata results of ALL events
         resultsRaw = AQuA2_Feature.res.featureTable1;
