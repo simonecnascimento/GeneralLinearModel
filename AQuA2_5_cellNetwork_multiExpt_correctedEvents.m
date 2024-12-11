@@ -2,133 +2,60 @@
 
 clear all;
 
-% Change you Current Folder - fullCraniotomy
-cd D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\baseline\3._analysisByEvent.mat;
+% Set the directory for the experiment you need
+fullCraniotomyBaselineDir = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\baseline\3._analysisByEvent.mat';
+%fullCraniotomyCSDDir = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\CSD\corrected_for_pinprick\1._analysis.mat';
+% thinBoneBaselineDir = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\thinBone\_analysisByEvent.mat';
+
+cd (fullCraniotomyBaselineDir);
+% Get all .mat files in the directory
+FilesAll = dir(fullfile(fullCraniotomyBaselineDir, '*_analysisByEvent.mat')); 
+
+% Extract file names
+fileNames = {FilesAll.name};
+
+% Initialize an array to store the extracted parts for sorting
+sortKey = [];
+
+% Loop through all filenames to extract the parts for sorting
+for file = 1:length(fileNames)
+    filename = fileNames{file};
+    
+    % Extract the number after "Pf4Ai162-" (e.g., '2' from 'Pf4Ai162-2')
+    numberAfterPrefix = sscanf(filename, 'Pf4Ai162-%d', 1);
+    
+    % Extract the date (e.g., '221130' from 'Pf4Ai162-2_221130_FOV6')
+    dateStr = regexp(filename, '\d{6}', 'match', 'once');
+    
+    % Extract the FOV number (e.g., 'FOV6' from 'Pf4Ai162-2_221130_FOV6')
+    fovNumber = sscanf(filename, 'Pf4Ai162-%*d_%*d_FOV%d', 1);
+    
+    % Store the extracted values in a matrix for sorting
+    sortKey = [sortKey; numberAfterPrefix, str2double(dateStr), fovNumber];
+end
+
+% Sort by the three columns: numberAfterPrefix, date, fovNumber
+[~, idx] = sortrows(sortKey);
+sortedFileNames = fileNames(idx);
 
 % Initialize an empty table
 networkTable_all = table();
-
-% fullCraniotomy
-FilesAll = {
-'Pf4Ai162-2_221130_FOV2_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-2_221130_FOV6_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-10_230628_FOV1_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-10_230628_FOV2_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-10_230628_FOV3_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',... 
-'Pf4Ai162-10_230628_FOV4_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-10_230628_FOV5_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',... 
-'Pf4Ai162-10_230628_FOV7_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-10_230628_FOV8_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-11_230630_FOV1_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-11_230630_FOV2_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-11_230630_FOV3_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-11_230630_FOV4_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-11_230630_FOV5_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-11_230630_FOV6_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-11_230630_FOV8_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-11_230630_FOV9_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-12_230717_FOV1_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-12_230717_FOV2_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-12_230717_FOV3_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-12_230717_FOV4_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-12_230717_FOV5_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-12_230717_FOV6_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-12_230717_FOV7_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-12_230717_FOV8_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-12_230717_FOV9_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-12_230717_FOV10_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-13_230719_FOV1_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-13_230719_FOV2_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-13_230719_FOV3_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-13_230719_FOV4_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-13_230719_FOV5_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-13_230719_FOV6_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-13_230719_FOV7_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-13_230719_FOV8_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-18_240221_FOV1_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-20_240229_FOV1_reg_green_Substack(1-927)_analysisByEvent.mat'};
-
-%% Load .mat files  (THIN BONE BASELINE)
-
-% Change you Current Folder - thinBone
-cd D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\thinBone\_analysisByEvent.mat
-
-% Initialize an empty table
-table = table();
-
-% thinBone
-FilesAll = {
-'Pf4Ai162-5_230502_FOV2_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-6_230502_FOV2_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-6_230502_FOV4_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-8_230614_FOV1_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-8_230614_FOV2_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-8_230614_FOV3_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-8_230614_FOV4_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-8_230614_FOV5_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-8_230614_FOV7_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-9_230614_FOV4_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-9_230614_FOV5_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat'};
-
-%% Load .mat files  (FULL CRANIOTOMY CSD)
-
-% Change you Current Folder - thinBone
-cd D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\CSD\corrected_for_pinprick\1._analysis.mat;
-
-% Initialize an empty table
-table = table();
-
-% thinBone
-FilesAll = {
-'Pf4Ai162-5_230502_FOV2_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-6_230502_FOV2_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-6_230502_FOV4_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-8_230614_FOV1_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-8_230614_FOV2_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-8_230614_FOV3_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-8_230614_FOV4_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-8_230614_FOV5_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-8_230614_FOV7_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-9_230614_FOV4_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat',...
-'Pf4Ai162-9_230614_FOV5_run1_reg_Z01_green_Substack(1-927)_analysisByEvent.mat'};
 
 %% extract network spatial density
 
 % Initialize a cell array to store the upperTriAverages for each experiment, for distance between cells
 
-allUpperTriValues = cell(length(FilesAll), 1); %distance between pair of cells
-eventDuration_simultaneousEvents_all = cell(length(FilesAll), 1);
-simultaneousMatrixDelaybyCell_average_all = cell(length(FilesAll), 1);
+allUpperTriValues = cell(length(sortedFileNames), 1); %distance between pair of cells
+eventDuration_simultaneousEvents_all = cell(length(sortedFileNames), 1);
+simultaneousMatrixDelaybyCell_average_all = cell(length(sortedFileNames), 1);
+listOfEvents_perCell_nodeOUTdegree_all = cell(length(sortedFileNames), 1);
+cellPairs_edges_distanceMicron_multipleAppearance_all = [];
 
-for experiment = 2:length(FilesAll)
-    
-    % Load analysis .mat file
-    data_analysis = load(FilesAll{experiment});
-    features = data_analysis.resultsRaw.Row;
-    results_complete = data_analysis.resultsRaw.Variables;
-
-    % AQuA2 directory 
-    fileTemp_parts = strsplit(data_analysis.filename, '_');
-    aqua_directory = fullfile('D:\2photon\Simone\Simone_Macrophages\', ...
-        fileTemp_parts{1,1}, '\', ...
-        [fileTemp_parts{1,2} '_' fileTemp_parts{1,3}], '\AQuA2\', ...
-        [fileTemp_parts{1,1} '_' fileTemp_parts{1,2} '_' fileTemp_parts{1,3} '_run1_reg_Z01_green_Substack(1-927)']);
-    AquA_fileName = [data_analysis.filename '_AQuA2.mat'];
-
-%     fileTemp_parts = strsplit(data_analysis.filename, '_');
-%     aqua_directory = fullfile('D:\2photon\Simone\Simone_Macrophages\', ...
-%         fileTemp_parts{1,1}, '\', ...
-%         [fileTemp_parts{1,2} '_' fileTemp_parts{1,3}], '\AQuA2\', ...
-%         [fileTemp_parts{1,1} '_' fileTemp_parts{1,2} '_' fileTemp_parts{1,3} '_reg_green_Substack(1-927)']);
-%     AquA_fileName = [data_analysis.filename '_AQuA2.mat'];
-
-    % Load AQuA2.mat file 
-    fullFilePath = fullfile(aqua_directory, AquA_fileName);
-    data_aqua = load(fullFilePath);
-
+for experiment = 2:length(sortedFileNames)
+ 
+    [data_analysis, data_aqua, data_CFU, AquA_fileName] = loadAnalysisData(sortedFileNames, experiment);
 
     % FILL TABLE WITH CELL NUMBERS, MAPS, AND EVENTS PROPAGATIONS
-
     % get network data from aqua
     nSimultanousEvents = num2cell(data_aqua.res.fts1.networkAll.nOccurSameTime);
     simultaneousEvents_all = data_aqua.res.fts1.networkAll.occurSameTimeList;
@@ -179,16 +106,6 @@ for experiment = 2:length(FilesAll)
 %     networkData_cleaned = networkData;
 % %     cellNumbers = num2cell(networkData_cleaned{currentEvent, 'cellNumber_all'}{1}); % Assuming cellNumber_all is a cell array
 % %     cellMaps = networkData_cleaned{currentEvent, 'cellMap_all'}{1}; % cellMap_all might already be a cell array
-
-    % CFU directory
-    CFU_directory = fullfile('D:\2photon\Simone\Simone_Macrophages\', ...
-        fileTemp_parts{1,1}, '\', ...
-        [fileTemp_parts{1,2} '_' fileTemp_parts{1,3}], '\AQuA2\');
-    CFU_fileName = [data_analysis.filename '_AQuA_res_cfu.mat'];
-    
-    % Load CFU.mat file 
-    CFU_FilePath = fullfile(CFU_directory, CFU_fileName);
-    data_CFU = load(CFU_FilePath);
 
     % Matrix by event
     simultaneousMatrixByEvent = zeros(numEvents, numEvents);
@@ -264,11 +181,16 @@ for experiment = 2:length(FilesAll)
 %             % Plot image of propagation within cell map
 %             [networkData, newTempMap] = propagationCellMap(networkData, currentEvent, a);
 
-            simultaneousMatrixByEvent(currentEvent, simultaneousEvent) = 1;
-            simultaneousMatrixByEvent(currentEvent, currentEvent) = 1; % Ensure the diagonal is set to 1 (an event is always simultaneous with itself)
-            if ismember(currentEvent, data_analysis.cols_to_delete) % remove 'cols_to_delete' from analysis, it includes eventToDelete and events from multinucleated cells
+            % remove 'cols_to_delete' from analysis, it includes eventToDelete and events from multinucleated cells
+            if ismember(currentEvent, data_analysis.cols_to_delete) 
                 simultaneousMatrixByEvent(currentEvent, :) = 0;
                 simultaneousMatrixByEvent(:, currentEvent) = 0;
+            elseif ismember(simultaneousEvent, data_analysis.cols_to_delete) 
+                simultaneousMatrixByEvent(simultaneousEvent, :) = 0;
+                simultaneousMatrixByEvent(:, simultaneousEvent) = 0;
+            else
+                simultaneousMatrixByEvent(currentEvent, simultaneousEvent) = 1;
+                simultaneousMatrixByEvent(currentEvent, currentEvent) = 1; 
             end
 
             % Calculate delay between current event and 1st simultanous event
@@ -278,19 +200,60 @@ for experiment = 2:length(FilesAll)
             startingFrame_currentEvent = startingFrame{currentEvent};
             startingFrame_simultaneousEvent = startingFrame{simultaneousEvent};
             delay = startingFrame_simultaneousEvent-startingFrame_currentEvent;
-              if delay < 0
-                 delay = 0;
-              end
-            simultaneousMatrixDelayByEvent(currentEvent,simultaneousEvent) = delay;
+            if delay < 0
+               delay = 0;
+            end
 
-            % Check if the cell already contains data
-            if isempty(simultaneousMatrixDelaybyCell{cellNumber_event, cellNumber_all})
-                % If empty, initialize it as an array with the current delay
-                simultaneousMatrixDelaybyCell{cellNumber_event, cellNumber_all} = delay;
+            if ismember(currentEvent, data_analysis.cols_to_delete)
+                % Nullify rows and columns for currentEvent
+                simultaneousMatrixDelayByEvent(currentEvent, :) = 0;
+                simultaneousMatrixDelayByEvent(:, currentEvent) = 0;
+
+                for cellToDelete = 1:length(data_CFU.cfuInfo1)
+                    if ismember(currentEvent, data_CFU.cfuInfo1{cellToDelete,2}) % Check if targetValue exists in column2{i}
+                        cellToDelete_event = data_CFU.cfuInfo1{cellToDelete,1}; % Get the corresponding value from column1
+                        break; % Exit loop once found
+                    end
+                end
+            
+                % Nullify rows and columns for simultaneousEvent if necessary
+            elseif ismember(simultaneousEvent, data_analysis.cols_to_delete)
+                    simultaneousMatrixDelayByEvent(simultaneousEvent, :) = 0;
+                    simultaneousMatrixDelayByEvent(:, simultaneousEvent) = 0;
+
+                for cellToDelete = 1:length(data_CFU.cfuInfo1)
+                    if ismember(simultaneousEvent, data_CFU.cfuInfo1{cellToDelete,2}) % Check if targetValue exists in column2{i}
+                        cellToDelete_event = data_CFU.cfuInfo1{cellToDelete,1}; % Get the corresponding value from column1
+                        break; % Exit loop once found
+                    end
+                end
             else
-                % Append the new delay to the existing data
-                simultaneousMatrixDelaybyCell{cellNumber_event, cellNumber_all} = ...
-                [simultaneousMatrixDelaybyCell{cellNumber_event, cellNumber_all}, delay];
+                % Assign delay if neither event is in cols_to_delete
+                cellToDelete_event = [];
+                simultaneousMatrixDelayByEvent(currentEvent, simultaneousEvent) = delay;
+            end
+                
+                % Check if the cell already contains data
+            if isempty(simultaneousMatrixDelaybyCell{cellNumber_event, cellNumber_all})
+                if ~isempty(cellToDelete_event)
+                    if cellToDelete_event == cellNumber_event || cellNumber_all
+                        simultaneousMatrixDelaybyCell{cellNumber_event, cellNumber_all} = [];
+                    else
+                        simultaneousMatrixDelaybyCell{cellNumber_event, cellNumber_all} = delay;
+                    end
+                else
+                    simultaneousMatrixDelaybyCell{cellNumber_event, cellNumber_all} = delay;
+                end
+            else
+                if ~isempty(cellToDelete_event)
+                    if cellToDelete_event == cellNumber_event || cellNumber_all
+                        simultaneousMatrixDelaybyCell{cellNumber_event, cellNumber_all} = ...
+                        [simultaneousMatrixDelaybyCell{cellNumber_event, cellNumber_all}, 0];
+                    else
+                        simultaneousMatrixDelaybyCell{cellNumber_event, cellNumber_all} = ...
+                        [simultaneousMatrixDelaybyCell{cellNumber_event, cellNumber_all}, delay];
+                    end
+                end
             end            
         end
 
@@ -387,21 +350,20 @@ for experiment = 2:length(FilesAll)
     % Process each matrix
     for i = 1:length(shortestDistanceBetweenCenters)
     currentMatrix = shortestDistanceBetweenCenters{i};
-    
-        if isnumeric(currentMatrix)
-            % Convert each element from pixels to micrometers
-            convertedMatrix = currentMatrix * conversionFactor;
-            
-            % Extract the upper triangular part, excluding the diagonal
-            upperTriValue = convertedMatrix(triu(true(size(convertedMatrix)), 1));
-            
-%             % Compute the mean of the upper triangular values, ignoring NaNs
-%             upperTriAvg = mean(upperTriValue, 'omitnan');
-%             % Append the computed average to the array
-%             upperTriAverages = [upperTriAverages; upperTriAvg];
 
-            % Append values with no average
-            upperTriValues = [upperTriValues; upperTriValue];
+        if ismember(i, data_analysis.cols_to_delete)
+            shortestDistanceBetweenCenters{i} = [];
+        else 
+            if isnumeric(currentMatrix)
+                % Convert each element from pixels to micrometers
+                convertedMatrix = currentMatrix * conversionFactor;
+                
+                % Extract the upper triangular part, excluding the diagonal
+                upperTriValue = convertedMatrix(triu(true(size(convertedMatrix)), 1));
+    
+                % Append values with no average
+                upperTriValues = [upperTriValues; upperTriValue];
+            end
         end
     end   
 
@@ -500,8 +462,23 @@ for experiment = 2:length(FilesAll)
         end
     end
 
-    % Cell network and directional graph
-    plotCellDistanceNetwork(data_CFU, data_analysis, simultaneousMatrixDelaybyCell, simultaneousMatrixDelaybyCell_average, pwd, AquA_fileName);
+    % Digraph
+    [adjMatrix, centers_allCells, G, rowsWithSingleAppearance, nodeDegree] = plotCellDistanceNetwork(data_CFU, data_analysis, simultaneousMatrixDelaybyCell, simultaneousMatrixDelaybyCell_average, pwd, AquA_fileName);
+
+    % Compute nodeOUTdegree x listOfEvents_perCell
+    listOfEvents_perCell = cellfun(@numel, data_CFU.cfuInfo1(:,2));
+    listOfEvents_perCell_nodeOUTdegree = [listOfEvents_perCell, nodeDegree];
+    listOfEvents_perCell_nodeOUTdegree_all{experiment} = listOfEvents_perCell_nodeOUTdegree;
+    
+    % Plot the resultant vector
+    resultantVector = sumEdgeVectors(G, centers_allCells, rowsWithSingleAppearance, pwd, AquA_fileName);
+
+    % Identify connected networks
+    saveConnectedNetworks(G, centers_allCells, pwd, AquA_fileName);
+
+    % Compute cell pair distance x edge/delay
+    cellPairs_edges_distanceMicron_multipleAppearance = getEdgeDistances(adjMatrix, centers_allCells, numCells, rowsWithSingleAppearance);
+    cellPairs_edges_distanceMicron_multipleAppearance_all = [cellPairs_edges_distanceMicron_multipleAppearance_all; cellPairs_edges_distanceMicron_multipleAppearance];
 
     % Save network data
     fileTemp = extractBefore(AquA_fileName, "_AQuA2");
@@ -510,64 +487,18 @@ for experiment = 2:length(FilesAll)
     subfolderNetworkPath = fullfile(pathTemp, subfolderNetworkName); % Create the full path for the subfolder
     % Create the full file name with path
     networkFilename = fullfile(subfolderNetworkPath, strcat(fileTemp, '_network_propagation.mat'));
-    save(networkFilename);
-
+    save(networkFilename, '-v7.3');
 end
 
-%% Get all averages of distances and get distribution
+% Correlation - duration of events x number of simultaneous events
+correlationBetweenEventDurationAndNumberSimultaneousEvents = computeEventDurationCorrelation(eventDuration_simultaneousEvents_all);
 
-% Initialize an empty array to store all values
-allValuesDistances_um = [];
+% Distribution - distances between cells with concurrent activity
+cleanDataDistances_um = cellPairsDistanceDistribution(allUpperTriValues);
 
-% Loop through each array
-for k = 1:length(allUpperTriValues) %allUpperTriAverages
-    currentVector = allUpperTriValues{k}; %allUpperTriAverages
-    
-    % Append the values to the allValues array
-    allValuesDistances_um = [allValuesDistances_um; currentVector]; 
-end
+% Correlation - cell pair distance x edge
+correlationBetweenCellPairsAndEdge = correlationBetweenCellPairsAndEdge(cellPairs_edges_distanceMicron_multipleAppearance_all);
 
-% Remove NaN values
-cleanDataDistances_um = allValuesDistances_um(~isnan(allValuesDistances_um));
+% Correlation - list of events x node OUTdegree
+correlationBetweenNumberofEventsAndOUTdegreeNode = correlationBetweenNumberofEventsAndOUTdegreeNode(listOfEvents_perCell_nodeOUTdegree_all);
 
-% Plot the histogram of the cleaned data
-figure;
-histogram(cleanDataDistances_um);
-title('Distance Metrics for Cells with Concurrent Activity');
-xlabel('Distance (um)');
-ylabel('Number of cell pairs');
-
-%% Correlation between duration of events and number of simultaneous events
-
-test_eventsToDelete = eventDuration_simultaneousEvents_all;
-for experiment = 5:length(FilesAll)    
-    % Load analysis .mat file
-    data_analysis = load(FilesAll{experiment});
-    % Remove cols_to_delete
-    if ~isempty(data_analysis.cols_to_delete)
-        test_eventsToDelete{experiment}(data_analysis.cols_to_delete, :) = [];
-    end
-end
-
-eventDuration_simultaneousEvents_allExperiments = eventDuration_simultaneousEvents_all(1,2:37);%remove experiment 1 because it only has 1 cell
-
-eventDuration_simultaneousEvents_allExperiments2 = [];
-
-for expt = 1:size(eventDuration_simultaneousEvents_allExperiments,2)
-    data = eventDuration_simultaneousEvents_allExperiments{expt};
-    eventDuration_simultaneousEvents_allExperiments2 = [eventDuration_simultaneousEvents_allExperiments2;data];
-end
-
-durationEvent = cell2mat(eventDuration_simultaneousEvents_allExperiments2(:, 1)); % Convert to numeric if it's not already
-
-% Compute the number of elements in column 2 for each row
-numSimultaneousEvents = cellfun(@numel, eventDuration_simultaneousEvents_allExperiments2(:, 2)); % Use `numel` to count elements in each array/cell
-
-% Correlation
-correlation = corr(durationEvent, numSimultaneousEvents, 'Rows', 'complete');
-disp(['Correlation between column 1 and number of elements in column 2: ' num2str(correlation)]);
-
-correlation = [durationEvent, numSimultaneousEvents];
-scatter(correlation(:,1),correlation(:,2))
-xlabel('Event Duration');
-ylabel('Number of Simultaneous Events');
