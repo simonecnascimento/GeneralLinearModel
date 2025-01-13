@@ -1,4 +1,8 @@
 
+
+
+
+
 %% Separate data points belonging to each group
 
 cellLocation = combinedTable{:,13};
@@ -27,10 +31,10 @@ x_spacing_factor = 0.02; % Adjust as needed
 %% RedLabel Perivascular x NonPerivascular
 
 % Count perivascular cells labeled with red and those not labeled with red
-perivascular_red = sum(cellLocation == 0 & redLabel == 1);
-perivascular_not_red = sum(cellLocation == 0 & redLabel == 0);
-non_perivascular_red = sum(cellLocation == 2 & redLabel == 1);
-non_perivascular_not_red = sum(cellLocation == 2 & redLabel == 0);
+perivascular_red = sum(multinucleated == 0 & cellLocation == 0 & redLabel == 1);
+perivascular_not_red = sum(multinucleated == 0 & cellLocation == 0 & redLabel == 0);
+non_perivascular_red = sum(multinucleated == 0 & cellLocation == 2 & redLabel == 1);
+non_perivascular_not_red = sum(multinucleated == 0 & cellLocation == 2 & redLabel == 0);
 
 % Create grouped bar chart with custom colors
 figure;
@@ -44,7 +48,7 @@ set(bar_handle(2), 'FaceColor', 'green');
 
 % Customize plot
 ylabel('Number of Cells');
-%xticklabels({'Perivascular', 'Non-Perivascular'}); % Adjusted position for clarity
+xticklabels({'Perivascular', 'Non-Perivascular'}); % Adjusted position for clarity
 legend({'Red Label', 'No Red Label'}, 'Location', 'best');
 title('Presence of red dextran by cell location');
 ylim([0, 350]);

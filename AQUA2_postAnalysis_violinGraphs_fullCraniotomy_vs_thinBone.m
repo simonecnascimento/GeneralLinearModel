@@ -1,7 +1,7 @@
-%% Data analysis fullCraniotomy(NP+NM) vs thinBone(all)
+%% Data analysis fullCraniotomy vs thinBone
 
 %for fullCraniotomy data - load spreadsheet and add Var3
-load('D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\baseline\AQuA2_data_fullCraniotomy_baseline.mat')
+load('D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\baseline\AQuA2_data_fullCraniotomy_features_baseline.mat')
 load('D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\baseline\multinucleated cells\multinucleatedCells.mat');
 fullCraniotomy_combinedTable = addvars(combinedTable, multinucleatedCells.Var3, 'NewVariableNames', 'Multinucleated');
 fullCraniotomy_multinucleated = fullCraniotomy_combinedTable{:,17};

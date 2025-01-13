@@ -1,4 +1,4 @@
-function resultantVector = sumEdgeVectors(G, nodePositions, rowsWithSingleAppearance, pwd, AquA_fileName)
+function resultantVector = sumEdgeVectors(G, nodePositions, rowsWithSingleAppearance, pwd, AquA_fileName, tableNames, phase)
     % SUMEDGEVECTORS Sums all edge vectors in a directed graph and computes the resultant vector.
     %
     % Input:
@@ -74,7 +74,11 @@ function resultantVector = sumEdgeVectors(G, nodePositions, rowsWithSingleAppear
         subfolderVectorPath = fullfile(pathTemp, subfolderVectorName);
         
         % Create the full file name with path
-        vectorFilename = fullfile(subfolderVectorPath, strcat(fileTemp, '_resultingVector.fig'));
+        if contains(pathTemp, 'CSD')
+            vectorFilename = fullfile(subfolderVectorPath, strcat(fileTemp, '_', tableNames{phase}, '_resultingVector.fig'));
+        else
+            vectorFilename = fullfile(subfolderVectorPath, strcat(fileTemp, '_resultingVector.fig'));
+        end
         
         % Save the figure
         if ~exist(subfolderVectorPath, 'dir')

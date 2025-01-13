@@ -1,4 +1,4 @@
-function [adjMatrix, centers_allCells, G, rowsWithSingleAppearance, nodeDegree] = plotCellDistanceNetwork(data_CFU, data_analysis, simultaneousMatrixDelaybyCell, simultaneousMatrixDelaybyCell_average, pwd, AquA_fileName)
+function [adjMatrix, centers_allCells, G, rowsWithSingleAppearance, nodeDegree] = plotCellDistanceNetwork(data_CFU, data_analysis, simultaneousMatrixDelaybyCell, simultaneousMatrixDelaybyCell_average, pwd, AquA_fileName, tableNames, phase)
     % Function to plot a directed graph representing cell distance networks
     % and optionally save the resulting figure.
     % Inputs:
@@ -154,11 +154,15 @@ function [adjMatrix, centers_allCells, G, rowsWithSingleAppearance, nodeDegree] 
         pathTemp = extractBefore(pwd, "3.");
         
         % Define subfolder path
-        subfolderDigraphName = 'figures\all cells (except multinucleated)\network_digraph';
+        subfolderDigraphName = 'figures\all cells (except multinucleated)\network_digraph\networks';
         subfolderDigraphPath = fullfile(pathTemp, subfolderDigraphName);
         
         % Create the full file name with path
-        digraphFilename = fullfile(subfolderDigraphPath, strcat(fileTemp, '_diGraph.fig'));
+        if contains(pathTemp, 'CSD')
+            digraphFilename = fullfile(subfolderDigraphPath, strcat(fileTemp, '_', tableNames{phase},'_diGraph.fig'));
+        else
+            digraphFilename = fullfile(subfolderDigraphPath, strcat(fileTemp,'_diGraph.fig'));
+        end
         
         % Save the figure
         if ~exist(subfolderDigraphPath, 'dir')

@@ -1,4 +1,4 @@
-function minDistance = computeShortestDistance(cellMaps)
+function minDistance = computeShortestDistances(cellMaps)
     % cellMaps: A cell array where each cell contains a matrix
 
     % Number of matrices

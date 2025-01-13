@@ -1,4 +1,4 @@
-function saveConnectedNetworks(G, centers_allCells, pwd, AquA_fileName)
+function saveConnectedNetworks(G, centers_allCells, pwd, AquA_fileName, tableNames, phase)
     % SAVECONNECTEDNETWORKS Identifies and visualizes disconnected networks in a graph.
     %
     % Inputs:
@@ -11,7 +11,7 @@ function saveConnectedNetworks(G, centers_allCells, pwd, AquA_fileName)
     h = plot(G, 'XData', centers_allCells(:, 2), 'YData', centers_allCells(:, 1));
     set(gca, 'YDir', 'reverse');
 
-    % Identify connected components
+    % Identify connected components - check for multiple disconnected networks
     [components, numComponents] = conncomp(G, 'Type', 'strong');
 
     % Ensure numComponents is a scalar
@@ -36,7 +36,11 @@ function saveConnectedNetworks(G, centers_allCells, pwd, AquA_fileName)
     subfolderNetworkPath = fullfile(pathTemp, subfolderNetworkName);
 
     % Create the full file name with path
-    networksFilename = fullfile(subfolderNetworkPath, strcat(fileTemp, '_networks.fig'));
+    if contains(pathTemp, 'CSD')
+       networksFilename = fullfile(subfolderNetworkPath, strcat(fileTemp, '_', tableNames{phase}, '_networks.fig'));
+    else
+       networksFilename = fullfile(subfolderNetworkPath, strcat(fileTemp, '_networks.fig'));
+    end
 
     % Ensure the subfolder exists, create it if necessary
     if ~exist(subfolderNetworkPath, 'dir')

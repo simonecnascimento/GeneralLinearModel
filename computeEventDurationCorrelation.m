@@ -1,4 +1,4 @@
-function correlation = computeEventDurationCorrelation(eventDuration_simultaneousEvents_all)
+function correlationBetweenEventDurationAndNumberSimultaneousEvents = computeEventDurationCorrelation(eventDuration_simultaneousEvents_all)
     % Function to compute the correlation between event duration and the number 
     % of simultaneous events across experiments.
     %
@@ -42,5 +42,5 @@ function correlation = computeEventDurationCorrelation(eventDuration_simultaneou
     title(['Correlation: ' num2str(correlationValue)]);
     
     % Return the correlation
-    correlation = correlationValue;
+    correlationBetweenEventDurationAndNumberSimultaneousEvents = correlationValue;
 end

@@ -5,6 +5,7 @@ function correlationBetweenCellPairsAndEdge = correlationBetweenCellPairsAndEdge
     
     % Compute the Pearson correlation between columns 3 and 4
     correlationBetweenCellPairsAndEdge = corr(col3, col4);
+    r_squared = correlationBetweenCellPairsAndEdge^2;
 
     % Create scatter plot of the data points
     figure;
@@ -18,6 +19,8 @@ function correlationBetweenCellPairsAndEdge = correlationBetweenCellPairsAndEdge
 
     % Display the correlation result
     fprintf('The correlation between column 3 and column 4 is: %.4f\n', correlationBetweenCellPairsAndEdge);
+    fprintf('The coefficient of determination between column 3 and column 4 is: %.4f\n', r_squared);
+
 end
 
 

@@ -3,13 +3,13 @@
 clear all;
 
 % Set the directory for the experiment you need
-%fullCraniotomyBaselineDir = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\baseline\1._analysis.mat';
-fullCraniotomyCSDDir = 'V:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\CSD\corrected_for_pinprick\1._analysis.mat';
+fullCraniotomyBaselineDir = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\baseline\1._analysis.mat';
+%fullCraniotomyCSDDir = 'V:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\CSD\corrected_for_pinprick\1._analysis.mat';
 % thinBoneBaselineDir = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\thinBone\_analysis.mat';
 
-cd (fullCraniotomyCSDDir);
+cd (fullCraniotomyBaselineDir);
 % Get all .mat files in the directory
-FilesAll = dir(fullfile(fullCraniotomyCSDDir, '*_analysis.mat')); 
+FilesAll = dir(fullfile(fullCraniotomyBaselineDir, '*_analysis.mat')); 
 
 % Extract file names
 fileNames = {FilesAll.name};
@@ -43,16 +43,16 @@ sortedFileNames = fileNames(idx);
 combinedTable = [];
 
 % Loop through each file
-for i = 1:length(fileNames)
+for i = 1:length(sortedFileNames)
     % Load the .mat file
-    data = load(fileNames{i});
+    data = load(sortedFileNames{i});
     
     % Extract data from the structure (assuming variable names are consistent across files)
     % Here, assuming the variable name is 'result' in each .mat file
     resultData = data.resultsFinal;
 
     % Create a column with the filename
-    fileNameColumn = repelem(fileNames(i), size(resultData, 1), 1); % Repeat filename for each row
+    fileNameColumn = repelem(sortedFileNames(i), size(resultData, 1), 1); % Repeat filename for each row
   
     % Append resultData to combinedTable
     combinedTable = [combinedTable; resultData, table(fileNameColumn)];
@@ -68,6 +68,7 @@ fullCraniotomy_cellLocation = fullCraniotomy_combinedTable{:,13};
 fullCraniotomy_redLabel = fullCraniotomy_combinedTable{:,14};
 fullCraniotomy_all_NM_indices = fullCraniotomy_multinucleated == 0;
 fullCraniotomy_numOnes = sum(fullCraniotomy_all_NM_indices);
+fullCraniotomy_combinedTable_NM = fullCraniotomy_combinedTable(fullCraniotomy_all_NM_indices == 1, :);
 
 %fullCraniotomy_multinucleated_indices = fullCraniotomy_multinucleated == 1;
 %sum(fullCraniotomy_multinucleated_indices);

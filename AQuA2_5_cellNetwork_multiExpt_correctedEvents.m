@@ -1,4 +1,4 @@
-%% Load .mat files  (FULL CRANIOTOMY BASELINE)
+%% Load .mat files 
 
 clear all;
 

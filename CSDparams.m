@@ -25,8 +25,8 @@ function paramTables = CSDparams(eventsByCell_experiment, data, variablesNames)
         paramName = string(variablesNames{p});
 
         % Preallocate a table for the current parameter
-        medianTable = cell2table(cell(length(rowsToProcess), 5), ...
-            'VariableNames', {'CellNumber', 'preCSD', 'duringCSD', 'postCSD', 'cellType'});
+        medianTable = cell2table(cell(length(rowsToProcess), 6), ...
+            'VariableNames', {'CellNumber', 'preCSD', 'duringCSD', 'postCSD', 'baseline_preCSD', 'cellType'});
 
         % Copy the cell numbers into the first column
         medianTable.CellNumber = eventsByCell_experiment(:,1);
@@ -36,23 +36,31 @@ function paramTables = CSDparams(eventsByCell_experiment, data, variablesNames)
 
             rowIdx = rowsToProcess(rIdx); % Current row
 
-            for colIdx = 2:4 % Columns: preCSD=2, duringCSD=3, postCSD=4
+            for colIdx = 2:5 % Columns: preCSD=2, duringCSD=3, postCSD=4, baseline_preCSD=5
                 evts = eventsByCell_experiment{rIdx, colIdx};
 
-                % Check if indices are valid
-                if ~isempty(evts)
+                if paramName == 'NumberOfEvents'
+                   if ~isempty(evts)
+                   medianTable{rIdx, colIdx} = {cellfun(@numel, eventsByCell_experiment(rIdx, colIdx))};
+                   end
+                else
+                    % Check if indices are valid
+                    if ~isempty(evts)
                     % Retrieve parameter values from tableResultsRaw
                     evtsParam = cell2mat(tableResultsRaw(p, evts));
 
                     % Calculate and store the median in the respective column
                     medianTable{rIdx, colIdx} = {median(evtsParam(1,:))};%mean
+                    end
+                    
                 end
             end
 
+            % Add cell type (perivascular or other)
             if ismember(rowIdx, data.perivascularCells)
-                medianTable{rIdx,5} = {0}; %perivascular
+                medianTable{rIdx,6} = {0}; %perivascular
             else
-                medianTable{rIdx,5} = {2};
+                medianTable{rIdx,6} = {2};
             end
         end
 

@@ -3,7 +3,7 @@
 % load aqua files (cfuInfo1 and res.featuresTable1)
 
 % define experiment name
-filename = 'Pf4Ai162-20_240229_FOV1_reg_green_Substack(1-927)';
+filename = 'Pf4Ai162-23_241127_FOV1_reg_green_Substack(1-4949)';
 
 % transform struct to table
 resultsRaw = res.featureTable1;

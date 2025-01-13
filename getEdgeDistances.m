@@ -1,4 +1,4 @@
-function cellPairs_edges_distanceMicron = getEdgeDistances(adjMatrix, centers_allCells, numCells)
+function cellPairs_edges_distanceMicron_multipleAppearance = getEdgeDistances(adjMatrix, centers_allCells, numCells, rowsWithSingleAppearance)
     % Function to compute the pairwise distances between cells and add them
     % to the table with edge values from the adjacency matrix.
     
@@ -40,6 +40,9 @@ function cellPairs_edges_distanceMicron = getEdgeDistances(adjMatrix, centers_al
             end
         end
     end
+
+    cellPairs_edges_distanceMicron_multipleAppearance = cellPairs_edges_distanceMicron;
+    cellPairs_edges_distanceMicron_multipleAppearance(rowsWithSingleAppearance, :) = [];
 end
 
 

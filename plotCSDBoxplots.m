@@ -1,17 +1,10 @@
-function plotCSDBoxplots(myTable, parameter, savePath)
+function plotCSDBoxplots(paramTables_allPhases_cleanedData, parameter, savePath)
   
-    %Extract valid numeric scalar values and convert to double for preCSD
-    preCSD = myTable.preCSD(cellfun(@(x) isnumeric(x) && isscalar(x), myTable.preCSD));
-    preCSD = cellfun(@double, preCSD); % Convert all to double
-    
-    % Extract valid numeric scalar values and convert to double for duringCSD
-    duringCSD = myTable.duringCSD(cellfun(@(x) isnumeric(x) && isscalar(x), myTable.duringCSD));
-    duringCSD = cellfun(@double, duringCSD); % Convert all to double
-    
-    % Extract valid numeric scalar values and convert to double for postCSD
-    postCSD = myTable.postCSD(cellfun(@(x) isnumeric(x) && isscalar(x), myTable.postCSD));
-    postCSD = cellfun(@double, postCSD); % Convert all to double
- 
+    preCSD = paramTables_allPhases_cleanedData.(parameter)(:,1);
+    duringCSD = paramTables_allPhases_cleanedData.(parameter)(:,2);
+    postCSD = paramTables_allPhases_cleanedData.(parameter)(:,3);
+
+
     % Find the global min and max to align the y-axes
     ymin = min([preCSD; duringCSD; postCSD]);
     yMin = ymin - 0.2 * ymin;

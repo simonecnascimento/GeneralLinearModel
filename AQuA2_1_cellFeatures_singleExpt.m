@@ -23,7 +23,7 @@ dataCol = struct( ...
 dataTable(:,dataCol.date) = cellfun(@num2str, dataTable(:,dataCol.date), 'UniformOutput',false); 
 
 % --- Specify the row number of interest
-rowOfInterest = 361; 
+rowOfInterest = 365; 
 
 % Extract information from the specified row
 mouse = dataTable{rowOfInterest, dataCol.mouse};

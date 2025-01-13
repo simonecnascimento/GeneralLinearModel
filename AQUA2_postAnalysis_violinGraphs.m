@@ -1,13 +1,6 @@
-
-cellLocation = combinedTable_fullCraniotomy{:,13};
-redLabel = combinedTable_fullCraniotomy{:,14};
-
-perivascular_NM_indices = cellLocation == 0 & multinucleated == 0; % Indices of cells belonging to group 0
-nonPerivascular_NM_indices = cellLocation == 2 & multinucleated == 0; % Indices of cells belonging to group 2
-
 %% Circularity Perivascular vs Non-perivascular
 
-circularity = combinedTable_fullCraniotomy{:,4};
+circularity = combinedTable{:,4};
 circularity_perivascular_NM = circularity(perivascular_NM_indices); % Data points belonging to group 0
 circularity_nonPerivascular_NM = circularity(nonPerivascular_NM_indices); % Data points belonging to group 2
 
