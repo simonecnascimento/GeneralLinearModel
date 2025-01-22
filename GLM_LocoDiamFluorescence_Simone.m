@@ -9,14 +9,14 @@ dataDir =  'D:\2photon\Simone\Simone_Macrophages\'; % 'D:\2photon\Simone\Simone_
 % PARSE DATA TABLE 
 
 % TODO --- Set excel sheet
-dataSet = 'Vasculature'; %'Macrophage'; 'AffCSD'; 'Pollen'; 'Vasculature'; %  'Astrocyte'; %  'Anatomy'; %  'Neutrophil_Simone'; % 'Afferents'
+dataSet = 'MacrophageBaseline_craniotomy'; %'Macrophage'; 'AffCSD'; 'Pollen'; 'Vasculature'; %  'Astrocyte'; %  'Anatomy'; %  'Neutrophil_Simone'; % 'Afferents'
 [regParam, projParam] = DefaultProcessingParams(dataSet); % get default parameters for processing various types of data
 
 regParam.method = 'translation'; %rigid 
 regParam.name = 'translation'; %rigid  
 
 % TODO --- Set data spreadsheet directory
-dataTablePath = 'R:\Levy Lab\2photon\ImagingDatasets_Simone.xlsx'; % 'R:\Levy Lab\2photon\ImagingDatasetsSimone2.xlsx';
+dataTablePath = 'R:\Levy Lab\2photon\ImagingDatasets_Simone_241017.xlsx'; % 'R:\Levy Lab\2photon\ImagingDatasetsSimone2.xlsx';
 dataTable = readcell(dataTablePath, 'sheet',dataSet);  % 'NGC', ''
 colNames = dataTable(1,:); dataTable(1,:) = [];
 dataCol = struct('mouse',find(contains(colNames, 'Mouse')), 'date',find(contains(colNames, 'Date')), 'FOV',find(contains(colNames, 'FOV')), 'vascChan',find(contains(colNames, 'VascChan')),...
@@ -44,12 +44,12 @@ locoDiamFluor_result = cell(1,Nexpt);
 locoDiamFluor_summary = cell(1,Nexpt);
 
 % TODO --- Specify xPresent - row number(X) within excel sheet
-xPresent = 263; %[18,22,24,30:32]; % flip(100:102); %45:47; % [66:69];
+xPresent = 21; %[18,22,24,30:32]; % flip(100:102); %45:47; % [66:69];
 Npresent = numel(xPresent);
 overwrite = false;
 
-GLMname = 'locoDiam';
-figDir = 'D:\MATLAB\Figures\GLM_Vasculature\';  % CSD figures\
+GLMname = 'locoDiamFluor';
+figDir = 'V:\2photon\Simone\Simone_Macrophages\GLMs\';  % CSD figures\
 mkdir( figDir );
 
 % Set GLM rate
@@ -61,41 +61,26 @@ for x = xPresent % x3D %
     [expt{x}, runInfo{x}, regParam, projParam] = ParseDataTable(dataTable, x, dataCol, dataDir, regParam, projParam);
     [Tscan{x}, runInfo{x}] = GetTime(runInfo{x});  % , Tcat{x}
 
-    % Get locomotion data
-    for runs = expt{x}.runs % flip(expt{x}.runs) % 
-        loco{x}(runs) = GetLocoData( runInfo{x}(runs), 'show',false ); 
-    end
-
-    %Get locomotion state
-    if any(cellfun(@isempty, {loco{x}.stateDown})) %isempty(loco{x}.stateDown)
-            try
-                loco{x} = GetLocoState(expt{x}, loco{x}, 'dir',strcat(dataDir, expt{x}.mouse,'\'), 'name',expt{x}.mouse, 'var','velocity', 'show',true); %
-            catch
-                fprintf('\nGetLocoState failed for %s', expt{x}.name)
-            end
-    end
-
-    % Get vascular data
-    [vesselROI{x}, NvesselROI{x}, tifStackMax{x}] = SegmentVasculature(expt{x}, projParam, 'overwrite',false, 'review',false );
-
-    %Get fluorescence data
-    %load from folder
-    %segregate only perivascular cells?
-    cellFluorPool = resultsFinal.dFF;
-    diamPool = [vesselROIpool.diameter];
-    allDiam = cat(1, diamPool.um_lp)';
-    allDiamZ = zscore(allDiam, [], 1);
-    diamResp = BinDownMean( allDiamZ, locoDiam_opts{x}.binSize ); 
-    cellFluorPool = 
-resultsFinal
-Cell ID
-dFF
-
+%     %Get fluorescence data
+%     %load from folder
+%     %segregate only perivascular cells?
+%     cellFluorPool = resultsFinal.dFF;
+%     diamPool = [vesselROIpool.diameter];
+%     allDiam = cat(1, diamPool.um_lp)';
+%     allDiamZ = zscore(allDiam, [], 1);
+%     diamResp = BinDownMean( allDiamZ, locoDiam_opts{x}.binSize ); 
+%     cellFluorPool = 
+% resultsFinal
+% Cell ID
+% dFF
 
     % GLMparallel options
+    %housekeeping
     locoDiamFluor_opts{x}.name = sprintf('%s_%s', expt{x}.name, GLMname); %strcat(expt{x}.name, , '_preCSDglm');
     locoDiamFluor_opts{x}.rShow = NaN;
     locoDiamFluor_opts{x}.figDir = ''; % figDir;
+
+    % Signal processing parameters
     locoDiamFluor_opts{x}.alpha = 0.01;  % The regularization parameter, default is 0.01
     locoDiamFluor_opts{x}.standardize = true; 
     locoDiamFluor_opts{x}.trainFrac = 0.75; % 1; %
@@ -111,8 +96,10 @@ dFF
     locoDiamFluor_opts{x}.minShuff = 15; 
     locoDiamFluor_opts{x}.window = [-10,10]; % [0,0]; % [-0.5, 0.5]; % 
     locoDiamFluor_opts{x}.lopo = true; %false; %
-    locoDiamFluor_opts{x}.frameRate = expt{x}.scanRate;  % GLMrate; %
-    locoDiamFluor_opts{x}.binSize = 1; %expt{x}.scanRate/GLMrate;
+
+    % Downsample data to GLMrate target 
+    locoDiamFluor_opts{x}.frameRate = GLMrate; %expt{x}.scanRate;  % GLMrate; %
+    locoDiamFluor_opts{x}.binSize = max([1,round(expt{x}.scanRate/GLMrate)]); %expt{x}.scanRate/GLMrate; %max([1,round(expt{x}.scanRate/GLMrate)]); 
     locoDiamFluor_opts{x}.minShuffFrame = round( locoDiamFluor_opts{x}.frameRate*locoDiamFluor_opts{x}.minShuff );
     windowFrame = round(locoDiamFluor_opts{x}.window*locoDiamFluor_opts{x}.frameRate);
     locoDiamFluor_opts{x}.shiftFrame = windowFrame(1):windowFrame(2);
@@ -121,17 +108,44 @@ dFF
     locoDiamFluor_opts{x}.lags = locoDiamFluor_opts{x}.shiftFrame/locoDiamFluor_opts{x}.frameRate;
     locoDiamFluor_opts{x}.xVar = 'Time';
 
-    % PREDICTORS
+    % GLMnet parameters - don't change without a good reason
+    locoDiamFluor_opts{x}.distribution = 'gaussian'; % 'poisson'; %  
+    locoDiamFluor_opts{x}.CVfold = 10;
+    locoDiamFluor_opts{x}.nlamda = 1000;
+    locoDiamFluor_opts{x}.maxit = 5*10^5;
+    locoDiamFluor_opts{x}.alpha = 0.01;  % The regularization parameter, default is 0.01
+    locoDiamFluor_opts{x}.standardize = true; 
+
+    % PREDICTORS - LOCOMOTION & VASCULATURE
+
+    %adjust frames based on Substack used for fluorescence
+    substack = input('Enter substack frames (e.g., 200:5599): ');
+    subtackDiam = substack';
 
     % Define locomotion predictors
+    % Get locomotion data
+    for runs = expt{x}.runs % flip(expt{x}.runs) % 
+        loco{x}(runs) = GetLocoData( runInfo{x}(runs), 'show',false ); 
+    end
+
+    %Get locomotion state
+    if any(cellfun(@isempty, {loco{x}.stateDown})) %isempty(loco{x}.stateDown)
+            try
+                loco{x} = GetLocoState(expt{x}, loco{x}, 'dir',strcat(dataDir, expt{x}.mouse,'\'), 'name',expt{x}.mouse, 'var','velocity', 'show',true); %
+            catch
+                fprintf('\nGetLocoState failed for %s', expt{x}.name)
+            end
+    end
+
     if expt{x}.Nruns == 1  %for single runs ONLY - adjust frame number of kinetics to match vascular projection
-        tempVelocityCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).Vdown), locoDiam_opts{x}.binSize );
-        tempAccelCat = BinDownMean( abs(vertcat(loco{x}(expt{x}.preRuns).Adown)), locoDiam_opts{x}.binSize ); 
-        tempStateCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).stateDown), locoDiam_opts{x}.binSize );
-        % adjust frame number of kinetics to match vascular projection
-        tempVelocityCat = tempVelocityCat(2:end-1); 
-        tempAccelCat = tempAccelCat(2:end-1);
-        tempStateCat = tempStateCat(2:end-1);
+        tempVelocityCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).Vdown), locoDiamFluor_opts{x}.binSize );
+        tempAccelCat = BinDownMean( abs(vertcat(loco{x}(expt{x}.preRuns).Adown)), locoDiamFluor_opts{x}.binSize ); 
+        tempStateCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).stateDown), locoDiamFluor_opts{x}.binSize );
+
+        %adjust frames based on Substack used
+        tempVelocityCat = tempVelocityCat(substack); 
+        tempAccelCat = tempAccelCat(substack);
+        tempStateCat = tempStateCat(substack);
 
     else %for multiple runs ONLY - adjust frame number of kinetics to match vascular projection
         for preRun = 1:expt{x}.Nruns
@@ -149,52 +163,91 @@ dFF
         tempAccelCat = tempAccelCat(200:5599);
         tempStateCat = tempStateCat(200:5599);
     end
-    tempVelocityCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).Vdown), locoDiamFluor_opts{x}.binSize );
-    tempAccelCat = BinDownMean( abs(vertcat(loco{x}(expt{x}.preRuns).Adown)), locoDiamFluor_opts{x}.binSize ); 
-    tempStateCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).stateDown), locoDiamFluor_opts{x}.binSize );
 
-    % Diameter predictors
-    vesselROIpool = [vesselROI{x}{:}];
-    diamPool = [vesselROIpool.diameter];
-    allDiam = cat(1, diamPool.um_gauss)';
+%     tempVelocityCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).Vdown), locoDiamFluor_opts{x}.binSize );
+%     tempAccelCat = BinDownMean( abs(vertcat(loco{x}(expt{x}.preRuns).Adown)), locoDiamFluor_opts{x}.binSize ); 
+%     tempStateCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).stateDown), locoDiamFluor_opts{x}.binSize );
+
+    % Define diameter predictors
+    % Get vascular data
+    [vesselROI{x}, NvesselROI{x}, tifStackMax{x}] = SegmentVasculature(expt{x}, projParam, 'overwrite',false, 'review',false );
+
+    bigVesselInd = find(strcmpi({vesselROI{x}{1,1}.vesselType}, {'A'}) | strcmpi({vesselROI{x}{1,1}.vesselType}, {'V'}) | strcmpi({vesselROI{x}{1,1}.vesselType}, {'D'}));
+    diamPool = [vesselROI{x}{1,1}(bigVesselInd).diameter];
+    allDiam = cat(1, diamPool.um_lp)'; %lp - low pass filter?
+    allDiam = allDiam(subtackDiam, :);
     allDiamZ = zscore(allDiam, [], 1);
-    diamResp = BinDownMean( allDiam, locoDiamFluor_opts{x}.binSize ); % allDiamZ
+    allDiamZ = allDiamZ(subtackDiam, :);
+%   diamResp = BinDownMean( allDiam, locoDiamFluor_opts{x}.binSize ); % allDiamZ
 
     locoDiamFluor_pred{x} = struct('data',[], 'name',[], 'N',NaN, 'TB',[], 'lopo',[], 'fam',[]); 
-    locoDiamFluor_pred{x}.data = [tempVelocityCat, tempAccelCat, tempStateCat, diamResp]; % 
-    locoDiamFluor_pred{x}.name = {'Velocity', '|Accel|', 'State', 'Diameter'};
-    locoDiamFluor_pred{x}.N = size(locoDiamFluor_pred{x}.data,2);
-    for p = flip(1:locoDiamFluor_pred{x}.N), locoDiamFluor_pred{x}.lopo.name{p} = ['No ',locoDiamFluor_pred{x}.name{p}]; end
+
+    for vessel = 1:numel(diamPool)
+
+        locoDiamFluor_pred{x}.data = [tempVelocityCat, tempAccelCat, tempStateCat, allDiam(:, vessel)]; % 
+        locoDiamFluor_pred{x}.name = {'Velocity', '|Accel|', 'State', 'Diameter'};
+        locoDiamFluor_pred{x}.N = size(locoDiamFluor_pred{x}.data,2);
+        for p = flip(1:locoDiamFluor_pred{x}.N)
+            locoDiamFluor_pred{x}.lopo.name{p} = ['No ',locoDiamFluor_pred{x}.name{p}]; 
+        end
     
-    % Set up leave-one-family-out
-    locoDiamFluor_pred{x}.fam.col = {1:7, 8:10}; %{1:4, 5:7}; %{1:2, 3:4, 5:6, 7:8, 9:10, 11:12};  % {1:12};%{1, 2:3, 4:5, 6:7, 8, 9}; 
-    locoDiamFluor_pred{x}.fam.N = numel(locoDiamFluor_pred{x}.fam.col); 
-    locoDiamFluor_pred{x}.fam.name = {'Diameter','Locomotion'}; 
+        % Set up leave-one-family-out
+        locoDiamFluor_pred{x}.fam.col = {1:2, 3, 4}; %{1:4, 5:7}; %{1:2, 3:4, 5:6, 7:8, 9:10, 11:12};  % {1:12};%{1, 2:3, 4:5, 6:7, 8, 9}; 
+        locoDiamFluor_pred{x}.fam.N = numel(locoDiamFluor_pred{x}.fam.col); 
+        locoDiamFluor_pred{x}.fam.name = {'Locomotion', 'State', 'Diameter'}; 
 
-    % Define response
-    tempFluor = [fluor{x}(preCSDruns).z]; % [fluor{x}(preCSDruns).act]; % 
-    tempFluorCat = BinDownMean( vertcat(tempFluor.ROI), locoDiamFluor_opts{x}.binSize ); 
-    %tempFluorCat(tempFluorCat < 0) = 0;
-    locoDiamFluor_resp{x}.data = tempFluorCat; % tempScaleMag; %
-    locoDiamFluor_resp{x}.N = size(locoDiamFluor_resp{x}.data, 2); 
-    locoDiamFluor_resp{x}.name = sprintfc('Fluor %i', 1:locoDiamFluor_resp{x}.N);
+        % Define response
+        % Get/Load fluorescence data
+        aquaPath = sprintf('%sAQuA2\', expt{x}.dir);
+        files_aqua = dir(aquaPath);
 
-    % Remove scans with missing data 
-    nanFrame = find(any(isnan([locoDiamFluor_pred{x}.data, locoDiamDeform_resp{x}.data]),2)); % find( isnan(sum(pred(x).data,2)) ); 
-    fprintf('\nRemoving %i NaN-containing frames', numel(nanFrame));
-    locoDiamFluor_pred{x}.data(nanFrame,:) = []; locoDiamDeform_resp{x}.data(nanFrame,:) = [];
+        % Exclude '.', '..', and 'Thumbs.db' entries, so 'contents' contains only the actual files and folders in the directory
+        excludeList = {'.', '..', 'Thumbs.db'};
+        files_aqua = files_aqua(~ismember({files_aqua.name}, excludeList));
+        for f = 1:numel(files_aqua)
+            if contains(files_aqua(f).name, 'analysis') 
+                fileName = files_aqua(f).name;
+                load(sprintf('%s\\%s', aquaPath, fileName));
+            end
+        end
+     
+        cellFluorPool = [resultsFinal.dFF];
+        fluorResp = cat(1, cellFluorPool{:})';
+        fluorRespZ = zscore(fluorResp, [], 1);
+    
+        locoDiamFluor_resp{x}.data = fluorResp; 
+        locoDiamFluor_resp{x}.N = size(locoDiamFluor_resp{x}.data, 2); 
+    
+        %extract Cell ID from resultsFinal
+        fluorIDs = table2cell(resultsFinal(:,1))';
+        locoDiamFluor_resp{x}.name = fluorIDs; 
 
-    % Run the GLM
-    locoDiamFluor_opts{x}.load = true; % false; % 
-    locoDiamFluor_opts{x}.saveRoot = expt{x}.dir; %''; %
-    [locoDiamDeform_result{x}, locoDiamDeform_summary{x}, ~, locoDiamFluor_pred{x}, locoDiamDeform_resp{x}] = GLMparallel(locoDiamFluor_pred{x}, locoDiamDeform_resp{x}, locoDiamFluor_opts{x}); 
-    %locoDiamDeform_summary{x} = SummarizeGLM(locoDiamDeform_result{x}, locoDiamDeform_pred{x}, locoDiamDeform_resp{x}, locoDiamDeform_opts{x});
-end
+        % Remove scans with missing data 
+        nanFrame = find(any(isnan([locoDiamFluor_resp{x}.data, locoDiamFluor_resp{x}.data]),2)); % find( isnan(sum(pred(x).data,2)) ); 
+        fprintf('\nRemoving %i NaN-containing frames', numel(nanFrame));
+        locoDiamFluor_pred{x}.data(nanFrame,:) = []; 
+        locoDiamFluor_resp{x}.data(nanFrame,:) = [];
+
+        % GLM name update by vessel
+        GLMname_vessel = sprintf('GLM_locoDiamFluor_baseline_vessel%i', vessel);
+        locoDiamFluor_opts{x}.name = sprintf('%s_%s', fileTemp, GLMname_vessel); 
+
+        % Run the GLM
+        locoDiamFluor_opts{x}.load = false; % false; % 
+        locoDiamFluor_opts{x}.saveRoot = sprintf('%s', expt{x}.dir, 'GLMs\GLM_locoDiamFluor\'); 
+        mkdir (locoDiamFluor_opts{x}.saveRoot);
+        [locoDiamFluor_result{x}, locoDiamFluor_summary{x}, ~, locoDiamFluor_pred{x}, locoDiamFluor_resp{x}] = GLMparallel(locoDiamFluor_pred{x}, locoDiamFluor_resp{x}, locoDiamFluor_opts{x}); 
+        %locoDiamDeform_summary{x} = SummarizeGLM(locoDiamDeform_result{x}, locoDiamDeform_pred{x}, locoDiamDeform_resp{x}, locoDiamDeform_opts{x});
+    
+        
+    
+    end
+    end
 %%
 for x = xPresent
-    locoDiamFluor_opts{x}.rShow = 1:sum(NvesselROI{x}); %1:locoDiamDeform_resp{x}.N; % 1:LocoDeform_resp{x}.N; %NaN;
+    locoDiamFluor_opts{x}.rShow = 1:locoDiamFluor_resp{x}.N; %1:locoDiamDeform_resp{x}.N; % 1:LocoDeform_resp{x}.N; %NaN;
     locoDiamFluor_opts{x}.xVar = 'Time';
-    ViewGLM(locoDiamFluor_pred{x}, locoDiamDeform_resp{x}, locoDiamFluor_opts{x}, locoDiamDeform_result{x}, locoDiamDeform_summary{x}); %GLMresultFig = 
+    ViewGLM(locoDiamFluor_pred{x}, locoDiamFluor_resp{x}, locoDiamFluor_opts{x}, locoDiamFluor_result{x}, locoDiamFluor_summary{x}); %GLMresultFig = 
 end
 
 %%

@@ -3,12 +3,12 @@
 clear all;
 
 fullCraniotomyCSDDir = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\CSD\corrected_for_pinprick\3._analysisByEvent.mat';
-%fullCraniotomyBIBNDir = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\BIBN\3._analysisByEvent.mat';
+fullCraniotomyBIBNDir = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\BIBN\3._analysisByEvent.mat';
 
 cd (fullCraniotomyCSDDir);
 
 % Get all .mat files in the directory
-FilesAll = dir(fullfile(fullCraniotomyCSDDir, '*_analysisByEvent.mat')); 
+FilesAll = dir(fullfile(fullCraniotomyBIBNDir, '*_analysisByEvent.mat')); 
 
 % Extract file names
 fileNames = {FilesAll.name};
@@ -123,11 +123,13 @@ paramTables_during_postCSD_cleanedData = struct();
 classifications = struct();
 
 % Directory to save the CSV files
-outputDir = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\CSD\corrected_for_pinprick';
+%outputDir = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\CSD\corrected_for_pinprick';
 %outputDir = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\BIBN';
 
 for param = 1:length(parameters)
     parameter = parameters{param};
+    disp(parameter);
+    
 
     % Initialize an empty table to store concatenated data
     combinedTable = table(); % Initialize an empty table to store concatenated data
@@ -146,7 +148,7 @@ for param = 1:length(parameters)
     % Store the concatenated table in the output struct
     paramTables_allPhases.(parameter) = combinedTable;
 
-    %
+    % use this combinedTable for prism (preCSD_allFeatures), param-by-param
     combinedTable = table2cell(combinedTable);
     emptyRows = cellfun(@isempty, paramTables_allPhases.(parameter){:,2});
     combinedTable(emptyRows, :) = [];
@@ -241,13 +243,19 @@ postCSD_numberOfEvents = cellfun(@(x) numel(x), postCSD_eventList_cleaned);
 postCSD_numberOfEvents_Hz = postCSD_numberOfEvents/1800;
 postCSD_numberOfEvents = [postCSD_numberOfEvents, postCSD_numberOfEvents_Hz];
 
-%% stackedBar for number of events
+%% stackedBar for number of events 
 
 % Data for the categories (based on manual count of responses on each FOV: eventHz_byCell)
-stackedBar = [
+stackedBarCSD = [
     19, 19, 16, 8, 15, 3, 4, 16, 17, 18, 11, 7, 11;  % Decrease
     1, 0, 14, 4, 4, 2, 3, 2, 1, 1, 5, 7, 5;  % Increase
     1, 2, 4, 5, 3, 1, 6, 9, 0, 4, 0, 0, 1  % No Change
+];
+
+stackedBarBIBN = [
+    14, 3, 14;  % Decrease
+    3, 4, 3;  % Increase
+    1, 0, 0  % No Change
 ];
 
 % Categories
@@ -255,28 +263,38 @@ categories = {'Decrease', 'Increase', 'No Change'};
 
 % Create stacked bar chart
 figure;
-bar(stackedBar', 'stacked');
+bar(stackedBarBIBN', 'stacked');
 
 % Add labels and title
 xlabel('FOV');
 ylabel('# cells');
 title('Cellular Event Rate (Hz) Response: DuringCSD vs. PreCSD');
 legend(categories, 'Location', 'best');
+
+% Set maximum value for y-axis
+ylim([0 20]);  % Adjust the maximum value (e.g., 20) as needed
+
 grid off;
 
 %% pie charts
 
 % Data for the categories (rows are categories, columns are FOVs)
-stackedBar = [
-    1, 0, 14, 4, 4, 2, 3, 2, 1, 1, 5, 7, 5;  % Increase
+stackedBarCSD = [
     19, 19, 16, 8, 15, 3, 4, 16, 17, 18, 11, 7, 11;  % Decrease
+    1, 0, 14, 4, 4, 2, 3, 2, 1, 1, 5, 7, 5;  % Increase
     1, 2, 4, 5, 3, 1, 6, 9, 0, 4, 0, 0, 1  % No Change
 ];
 
+stackedBarBIBN = [
+    14, 3, 14;  % Decrease
+    3, 4, 3;  % Increase
+    1, 0, 0  % No Change
+];
+
 % Normalize each category by its total to calculate percentages
-percentIncrease = stackedBar(1, :) / sum(stackedBar(1, :)) * 100;
-percentDecrease = stackedBar(2, :) / sum(stackedBar(2, :)) * 100;
-percentNoChange = stackedBar(3, :) / sum(stackedBar(3, :)) * 100;
+percentIncrease = stackedBarBIBN(1, :) / sum(stackedBarBIBN(1, :)) * 100;
+percentDecrease = stackedBarBIBN(2, :) / sum(stackedBarBIBN(2, :)) * 100;
+percentNoChange = stackedBarBIBN(3, :) / sum(stackedBarBIBN(3, :)) * 100;
 
 % Sort each category in descending order
 [percentIncreaseSorted, idxIncrease] = sort(percentIncrease, 'descend');

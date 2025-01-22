@@ -3,7 +3,7 @@
 clear all;
 
 % Set the directory for the experiment you need
-fullCraniotomyBaselineDir = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\baseline\3._analysisByEvent.mat';
+fullCraniotomyBaselineDir = 'V:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\baseline\3._analysisByEvent.mat';
 %fullCraniotomyCSDDir = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\CSD\corrected_for_pinprick\1._analysis.mat';
 % thinBoneBaselineDir = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\thinBone\_analysisByEvent.mat';
 

@@ -54,6 +54,10 @@ function [data_byCell_all, data_byFOV_all] = calculateEventRate(paramTables_all_
     increasingCells = data_byCell_all(risingEvents, :);
     decreasingCells = data_byCell_all(decreasingEvents, :);
     noChangeCells = data_byCell_all(noChangeEvents, :);
+
+    % check how many cells have no recovered
+    noRecoveryCells = decreasingCells(decreasingCells(:,4) == "0", :);
+    recoveryCells = decreasingCells(decreasingCells(:,4) ~= "0", :);
     
     % byFOV
     data_byFOV = table2cell(paramTables_all_byFOV(:,1:3));
