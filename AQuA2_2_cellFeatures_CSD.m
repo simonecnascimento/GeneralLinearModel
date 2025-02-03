@@ -2,13 +2,13 @@
 
 clear all;
 
-fullCraniotomyCSDDir = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\CSD\corrected_for_pinprick\3._analysisByEvent.mat';
-fullCraniotomyBIBNDir = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\BIBN\3._analysisByEvent.mat';
+fullCraniotomyCSDDir = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\CSD\corrected_for_pinprick\correct resolutions\3._analysisByEvent.mat';
+%fullCraniotomyBIBNDir = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\BIBN\3._analysisByEvent.mat';
 
 cd (fullCraniotomyCSDDir);
 
 % Get all .mat files in the directory
-FilesAll = dir(fullfile(fullCraniotomyBIBNDir, '*_analysisByEvent.mat')); 
+FilesAll = dir(fullfile(fullCraniotomyCSDDir, '*_analysisByEvent.mat')); 
 
 % Extract file names
 fileNames = {FilesAll.name};
@@ -77,7 +77,7 @@ for file = 1:length(sortedFileNames)
     end
 
     % frames for CSD phases
-    baseline_preCSD_frames = [927,1854]; %[927,1854] [1,927]
+    baseline_preCSD_frames = [1,927]; %[927,1854] [1,927]
     preCSD_frames = 1854;
     % 1min duringCSD
     duringCSD_frames = [1855, 1917]; %60sec (ca. 62 frames)
@@ -123,7 +123,7 @@ paramTables_during_postCSD_cleanedData = struct();
 classifications = struct();
 
 % Directory to save the CSV files
-%outputDir = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\CSD\corrected_for_pinprick';
+outputDir = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\CSD\corrected_for_pinprick';
 %outputDir = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\BIBN';
 
 for param = 1:length(parameters)
@@ -171,7 +171,7 @@ for param = 1:length(parameters)
     %writetable(classifiedTable.(parameter).pre_postCSD, fullfile(outputDir, [parameter '_pre_postCSD.csv']));
     %writetable(classifiedTable.(parameter).during_postCSD, fullfile(outputDir, [parameter '_during_postCSD.csv']));
 
-    %savePath = extractBefore(fullCraniotomyBIBNDir, '\3.');
+    %savePath = extractBefore(fullCraniotomyCSDDir, '\3.');
     %plotCSDBoxplots(paramTables_allPhases_cleanedData, parameter, savePath);
 end
 

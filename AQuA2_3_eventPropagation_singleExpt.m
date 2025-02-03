@@ -12,7 +12,7 @@ resultsExpanded_propagation = cell2table(resultsRaw.ftsTb); %expanded events wit
 % Delete columns = multinucleated cells and their respective events
 cols_to_delete = input('Enter columns to delete (e.g., [1,2] ): ');
 
-totalCells = input('Enter total number of remaining cells: ');
+%totalCells = input('Enter total number of remaining cells: ');
 
 % Delete specified columns
 resultsExpanded_propagation(:, cols_to_delete) = [];
@@ -33,14 +33,14 @@ end
 
 % save
 newFilename = strcat(filename, '_propagationSpeed.mat');
-save(newFilename);
+save(newFilename, '-v7.3');
 
 %
 clear all;
 
 %% Create analysisByEvent
-%Load both _analysis.mat and _propagation.mat of each FOV
+%Load both _analysis.mat and _propagationSpeed.mat of each FOV
 
 Filename_analysisByEvent = strcat(filename, '_analysisByEvent.mat');
-save(Filename_analysisByEvent);
+save(Filename_analysisByEvent, '-v7.3');
 clear all;

@@ -76,7 +76,7 @@ function [eventsByCell_experiment, frameNumbers, indexes] = eventsCSDphases(data
             end
         end
     end
-    valuesToRemove = cat(1,data_analysis.cellsToMergeCell{:, 2:end});
+    valuesToRemove = cat(1,cellsToMergeCell{:, 2:end}); %valuesToRemove = cat(1,data_analysis.cellsToMergeCell{:, 2:end});
     eventsByCell_experiment(valuesToRemove, :) = [];
 end
 

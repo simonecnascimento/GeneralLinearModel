@@ -9,7 +9,7 @@ dataDir =  'D:\2photon\Simone\Simone_Macrophages\'; % 'D:\2photon\Simone\Simone_
 % PARSE DATA TABLE 
 
 % TODO --- Set excel sheet
-dataSet = 'MacrophageBaseline'; %'Macrophage'; 'AffCSD'; 'Pollen'; 'Vasculature'; %  'Astrocyte'; %  'Anatomy'; %  'Neutrophil_Simone'; % 'Afferents'
+dataSet = 'MacrophageBaseline_craniotomy'; %'Macrophage'; 'AffCSD'; 'Pollen'; 'Vasculature'; %  'Astrocyte'; %  'Anatomy'; %  'Neutrophil_Simone'; % 'Afferents'
 [regParam, projParam] = DefaultProcessingParams(dataSet); % get default parameters for processing various types of data
 
 regParam.method = 'translation'; %rigid 
@@ -34,7 +34,7 @@ diamFluor_result = cell(1,Nexpt);
 diamFluor_summary = cell(1,Nexpt);
 
 % Specify row number(X) within excel sheet
-xPresent = 23;
+xPresent = 52;
 Npresent = numel(xPresent);
 overwrite = false;
 
@@ -136,7 +136,7 @@ for x = xPresent % x3D %
         excludeList = {'.', '..', 'Thumbs.db'};
         files_aqua = files_aqua(~ismember({files_aqua.name}, excludeList));
         for f = 1:numel(files_aqua)
-            if contains(files_aqua(f).name, 'analysis') 
+            if contains(files_aqua(f).name, '(1-927)_analysis') 
                 fileName = files_aqua(f).name;
                 load(sprintf('%s\\%s', aquaPath, fileName));
             end
@@ -146,7 +146,7 @@ for x = xPresent % x3D %
         fluorResp = cat(1, cellFluorPool{:})';
         fluorRespZ = zscore(fluorResp, [], 1);
     
-        diamFluor_resp{x}.data = fluorResp; 
+        diamFluor_resp{x}.data = fluorRespZ; 
         diamFluor_resp{x}.N = size(diamFluor_resp{x}.data, 2); 
     
         %extract Cell ID from resultsFinal
@@ -181,6 +181,25 @@ for x = xPresent % x3D %
 
     end
 end
+
+%% Post processing 
+finalMatrix = [];
+
+% Loop through each column and concatenate
+for i = 1:length(diamFluor_summary_deviances)
+    finalMatrix = [finalMatrix, diamFluor_summary_deviances(:,i), diamFluor_summary_peakCoefficients(:,i), diamFluor_summary_peakLags(:,i)];
+end
+
+dev_all = arrayfun(@(s) s.dev, diamFluor_result{1,x}, 'UniformOutput', false);
+dev_numeric = cell2mat(dev_all); % Convert cell array to a numeric array
+idx = dev_numeric > 0.1; % Apply the condition
+
+coeff_all = arrayfun(@(s) s.coeff, diamFluor_result{1,x}, 'UniformOutput', false);
+% Extract corresponding column 1 values
+selectedCoeff = coeff_all(idx);
+finalCoeff = cell2mat(selectedCoeff');
+
+
 %% Gather all summary data (deviances, peakCoefficients and peakLags of each cell against each vessel) - SCN
     
     % diamFluor_summary_deviances 

@@ -16,7 +16,7 @@ regParam.method = 'translation'; %rigid
 regParam.name = 'translation'; %rigid  
 
 % TODO --- Set data spreadsheet directory
-dataTablePath = 'R:\Levy Lab\2photon\ImagingDatasets_Simone_241017.xlsx'; % 'R:\Levy Lab\2photon\ImagingDatasetsSimone2.xlsx';
+dataTablePath = 'R:\Levy Lab\2photon\ImagingDatasets_Simone.xlsx'; % 'R:\Levy Lab\2photon\ImagingDatasetsSimone2.xlsx';
 dataTable = readcell(dataTablePath, 'sheet',dataSet);  % 'NGC', ''
 colNames = dataTable(1,:); dataTable(1,:) = [];
 dataCol = struct('mouse',find(contains(colNames, 'Mouse')), 'date',find(contains(colNames, 'Date')), 'FOV',find(contains(colNames, 'FOV')), 'vascChan',find(contains(colNames, 'VascChan')),...
@@ -43,7 +43,7 @@ locoDiam_result = cell(1,Nexpt);
 locoDiam_summary = cell(1,Nexpt);
 
 % TODO --- Specify xPresent - row number(X) within excel sheet
-xPresent = 5; %[18,22,24,30:32]; % flip(100:102); %45:47; % [66:69];
+xPresent = 55; %[18,22,24,30:32]; % flip(100:102); %45:47; % [66:69];
 Npresent = numel(xPresent);
 overwrite = false;
 
@@ -53,7 +53,7 @@ mkdir( figDir );
 
 % Set GLM rate
 GLMrate = 1; %15.49/16 for 3D data %projParam.rate_target = 1 for 2D data
-%%
+
 for x = xPresent % x3D % 
 
     % Parse data table
@@ -72,7 +72,7 @@ for x = xPresent % x3D %
     % Signal processing parameters
     locoDiam_opts{x}.trainFrac = 0.75; % 1; %
     locoDiam_opts{x}.Ncycle = 20;
-    locoDiam_opts{x}.minDev = 0.05; 
+    locoDiam_opts{x}.minDev = 0.1; %0.05
     locoDiam_opts{x}.minDevFrac = 0.1;
     locoDiam_opts{x}.maxP = 0.05;
     locoDiam_opts{x}.Nshuff = 0;  
@@ -119,51 +119,56 @@ for x = xPresent % x3D %
     % Concatenate input variables pre-CSD
     % Define locomotion predictors
     if expt{x}.Nruns == 1  %for single runs ONLY - adjust frame number of kinetics to match vascular projection
-        tempVelocityCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).Vdown), locoDiam_opts{x}.binSize );
-        tempAccelCat = BinDownMean( abs(vertcat(loco{x}(expt{x}.preRuns).Adown)), locoDiam_opts{x}.binSize ); 
+        %tempVelocityCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).Vdown), locoDiam_opts{x}.binSize );
+        %tempAccelCat = BinDownMean( abs(vertcat(loco{x}(expt{x}.preRuns).Adown)), locoDiam_opts{x}.binSize ); 
         tempStateCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).stateDown), locoDiam_opts{x}.binSize );
 
         vascFrames = numel(vesselROI{1, x}{1,1}(1).projection(:, 2));
 
-        if numel(tempVelocityCat) == (vascFrames + 1)
+        if numel(tempStateCat) == (vascFrames + 1)
             %ALWAYS remove first scan. ONLY remove last scan if there is a difference of 2 frames
-            tempVelocityCat = tempVelocityCat(2:end);
-            tempAccelCat = tempAccelCat(2:end); 
+            %tempVelocityCat = tempVelocityCat(2:end);
+            %tempAccelCat = tempAccelCat(2:end); 
             tempStateCat = tempStateCat(2:end); 
-        elseif numel(tempVelocityCat) == (vascFrames + 2)
+        elseif numel(tempStateCat) == (vascFrames + 2)
             %ONLY remove last scan if there is a difference of 2 frames
-            tempVelocityCat = tempVelocityCat(2:end-1);
-            tempAccelCat = tempAccelCat(2:end-1); 
+            %tempVelocityCat = tempVelocityCat(2:end-1);
+            %tempAccelCat = tempAccelCat(2:end-1); 
             tempStateCat = tempStateCat(2:end-1);
         else
             error('Unexpected mismatch in the number of elements of tempVelocityCat.');
             %Adjust frames based on Substack baseline (1-927). 
-            %By default, 1st frame is removed when generating projection for vasculature, so you should set substack for 2-928
-            tempVelocityCat = tempVelocityCat(2:928);
-            tempAccelCat = tempAccelCat(2:928); 
-            tempStateCat = tempStateCat(2:928);
+            %By default, 1st frame is removed when generating projection for vasculature, so for locomotion you should set substack for 2-928
+            %tempVelocityCat = tempVelocityCat(2:928);
+            %tempAccelCat = tempAccelCat(2:928); 
+            %tempStateCat = tempStateCat(2:928);
         end
 
     else %for multiple runs ONLY - adjust frame number of kinetics to match vascular projection
         for preRun = 1:expt{x}.Nruns
             loco{x}(preRun).Vdown(1:15) = [];
             loco{x}(preRun).Adown(1:15) = [];
-            %loco{x}(preRun).stateDown(1:15) = [];
+            loco{x}(preRun).stateDown(1:15) = [];
         end
         % Define locomotion predictors
-        tempVelocityCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).Vdown), locoDiam_opts{x}.binSize );
-        tempAccelCat = BinDownMean( abs(vertcat(loco{x}(expt{x}.preRuns).Adown)), locoDiam_opts{x}.binSize ); 
+        %tempVelocityCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).Vdown), locoDiam_opts{x}.binSize );
+        %tempAccelCat = BinDownMean( abs(vertcat(loco{x}(expt{x}.preRuns).Adown)), locoDiam_opts{x}.binSize ); 
         tempStateCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).stateDown), locoDiam_opts{x}.binSize );
 
         %adjust frames based on Substack used
-        tempVelocityCat = tempVelocityCat(200:5599); 
-        tempAccelCat = tempAccelCat(200:5599);
+        %tempVelocityCat = tempVelocityCat(200:5599); 
+        %tempAccelCat = tempAccelCat(200:5599);
         tempStateCat = tempStateCat(200:5599);
     end
 
+    %Adjust frames based on Substack baseline (1-927). By default, 1st frame is removed when generating projection for vasculature, so you should set substack for 2-928
+    %tempVelocityCat = tempVelocityCat(1:927);
+    %tempAccelCat = tempAccelCat(1:927); 
+    tempStateCat = tempStateCat(1:927);
+
     locoDiam_pred{x} = struct('data',[], 'name',[], 'N',NaN, 'TB',[], 'lopo',[], 'fam',[]); 
-    locoDiam_pred{x}.data = [tempVelocityCat, tempAccelCat, tempStateCat];  
-    locoDiam_pred{x}.name = {'Velocity', '|Accel|', 'State'}; % ,'Speed',  'Str-Exp', 'Str-Comp',
+    locoDiam_pred{x}.data = tempStateCat(1:927);  
+    locoDiam_pred{x}.name = {'State'}; %{'Velocity', '|Accel|', 'State'};
     locoDiam_pred{x}.N = size(locoDiam_pred{x}.data,2);
     for p = flip(1:locoDiam_pred{x}.N) 
         locoDiam_pred{x}.lopo.name{p} = ['No ',locoDiam_pred{x}.name{p}]; 
@@ -186,11 +191,12 @@ for x = xPresent % x3D %
     vesselROIpool = [vesselROI{x}{:}];
     diamPool = [vesselROIpool.diameter];
     allDiam = cat(1, diamPool.um_lp)';
-    % calculate delta diameter
-    baseline = allDiam(1,:);
-    deltaDiam = abs(allDiam - baseline);
-    %allDiamZ = zscore(allDiam, [], 1);
-    diamResp = deltaDiam; %BinDownMean( allDiamZ, locoDiam_opts{x}.binSize ); % allDiam
+    allDiam = allDiam(1:927, :);
+%     % calculate delta diameter
+%     baseline = allDiam(1,:);
+%     deltaDiam = abs(allDiam - baseline);
+    allDiamZ = zscore(allDiam, [], 1); %the mean and standard deviation are calculated for each column
+    diamResp = allDiamZ; %BinDownMean( allDiamZ, locoDiam_opts{x}.binSize ); % allDiam
 
     locoDiam_resp{x}.data = diamResp;  %diamResp SCN 240102
     locoDiam_resp{x}.N = size(locoDiam_resp{x}.data, 2); 
@@ -215,13 +221,14 @@ for x = xPresent % x3D %
 end
 
 %save metadata
-save(fullfile(locoDiam_opts{x}.saveRoot, locoDiam_opts{x}.name)); % save metadata
+%save(fullfile(locoDiam_opts{x}.saveRoot, locoDiam_opts{x}.name)); % save metadata
 
-%% Show results
+% Show results
 for x = xPresent
     locoDiam_opts{x}.rShow = 1:sum(NvesselROI{x}); %1:locoDiam_resp{x}.N; % 1:LocoDeform_resp{x}.N; %NaN;
     locoDiam_opts{x}.xVar = 'Time';
-    ViewGLM(locoDiam_pred{x}, locoDiam_resp{x}, locoDiam_opts{x}, locoDiam_result{x}, locoDiam_summary{x}); %GLMresultFig = 
+    ViewGLM(locoDiam_pred{x}, locoDiam_resp{x}, locoDiam_opts{x}, locoDiam_result{x}, locoDiam_summary{x});
+    %ViewGLM(Pred, Resp, Opts, Result, Summ)%GLMresultFig = 
 end
 
 %% Compare GLM to data for each experiment
