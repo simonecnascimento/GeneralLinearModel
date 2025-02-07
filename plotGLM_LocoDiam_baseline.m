@@ -1,3 +1,4 @@
+clear all;
 directory = "D:\2photon\Simone\Simone_Macrophages\GLMs";
 cd(directory);
 
@@ -7,9 +8,18 @@ dataTable = readtable(filename, 'Sheet', sheetname);
 GLM_locoDiamMatrix = readmatrix(filename, 'Sheet', sheetname);
 GLM_locoDiamMatrix = GLM_locoDiamMatrix(2:end, :);
 
+% % vessel type based on manual visualization
+% piaVessels = [4,7,13,19,22]; 
+% duraVessels = [1,2,3,5,8,9,10,11,15,16,20,21]; 
+% %not sure [6, 12,14,17,18]
+
+% vessel type based on loco coefficient (total = 22 vessels)
+piaVessels = [4,7,13,19,22]; %14
+duraVessels = [1,2,3,5,6,8,9,10,11,12,15,16,17,18,20,21]; 
+
 x = (-60:60)'; % Column vector for x-axis
 
-% Plot each column (data is found in GLMs, GLM_locoDiam sheet)
+%% All vessels
 for columns = 1:22 %columns = 1:22
     figure;
     plot(x, GLM_locoDiamMatrix(:,columns));
@@ -20,13 +30,8 @@ for columns = 1:22 %columns = 1:22
     grid on;
 end
 
-
-% plot by vessel type
-piaVessels = [4,7,13,19,22]; 
-duraVessels = [1,2,3,5,8,9,10,11,15,16,20,21]; 
-%not sure [6, 12,14,17,18]
-
-%plot all curves (pia or dura)
+%% PIA
+% All
 plot(x, GLM_locoDiamMatrix(:,duraVessels));
 xlim([-60 60]); % Set x-axis limits
 xlabel('Delay (sec)');
@@ -34,10 +39,9 @@ ylabel('Coefficient value');
 title(['Plot of Column ', num2str(columns)]);
 grid on;
 
-
-% Plot each column (data is found in GLMs, GLM_locoDiam sheet)
-for columns = 1:length(duraVessels)
-    column = duraVessels(columns);
+% Individual
+for columns = 1:length(piaVessels)
+    column = piaVessels(columns);
     figure;
     plot(x, GLM_locoDiamMatrix(:,column));
     xlim([-60 60]); % Set x-axis limits
@@ -47,8 +51,7 @@ for columns = 1:length(duraVessels)
     grid on;
 end
 
-%% Response By Vessel Type
-% Pia
+% Individual + Mean
 figure; % Create a new figure
 hold on; % Keep all plots on the same figure
 
@@ -77,7 +80,29 @@ grid on;
 
 hold off; % Release the figure
 
-% Dura
+
+%% DURA
+% All
+plot(x, GLM_locoDiamMatrix(:,duraVessels));
+xlim([-60 60]); % Set x-axis limits
+xlabel('Delay (sec)');
+ylabel('Coefficient value');
+title(['Plot of Column ', num2str(columns)]);
+grid on;
+
+% Individual
+for columns = 1:length(piaVessels)
+    column = piaVessels(columns);
+    figure;
+    plot(x, GLM_locoDiamMatrix(:,column));
+    xlim([-60 60]); % Set x-axis limits
+    xlabel('Delay (sec)');
+    ylabel('Coefficient value');
+    title(['Plot of Column ', num2str(column)]);
+    grid on;
+end
+
+% Individual + Mean
 figure; % Create a new figure
 hold on; % Keep all plots on the same figure
 

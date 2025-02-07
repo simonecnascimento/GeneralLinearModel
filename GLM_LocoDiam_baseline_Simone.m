@@ -43,12 +43,12 @@ locoDiam_result = cell(1,Nexpt);
 locoDiam_summary = cell(1,Nexpt);
 
 % TODO --- Specify xPresent - row number(X) within excel sheet
-xPresent = 55; %[18,22,24,30:32]; % flip(100:102); %45:47; % [66:69];
+xPresent = 21; %[18,22,24,30:32]; % flip(100:102); %45:47; % [66:69];
 Npresent = numel(xPresent);
 overwrite = false;
 
-GLMname = 'GLM_locoDiam_baseline';
-figDir = 'D:\2photon\Simone\Simone_Macrophages\GLMs\locoDiam\';  % CSD figures\
+GLMname = 'GLM_velocityDiam_baseline'; %'GLM_locoDiam_baseline' loco - all lomotion predictors
+figDir = 'D:\2photon\Simone\Simone_Macrophages\GLMs\velocityDiam\';  % CSD figures\
 mkdir( figDir );
 
 % Set GLM rate
@@ -119,29 +119,29 @@ for x = xPresent % x3D %
     % Concatenate input variables pre-CSD
     % Define locomotion predictors
     if expt{x}.Nruns == 1  %for single runs ONLY - adjust frame number of kinetics to match vascular projection
-        %tempVelocityCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).Vdown), locoDiam_opts{x}.binSize );
-        %tempAccelCat = BinDownMean( abs(vertcat(loco{x}(expt{x}.preRuns).Adown)), locoDiam_opts{x}.binSize ); 
+        tempVelocityCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).Vdown), locoDiam_opts{x}.binSize );
+        tempAccelCat = BinDownMean( abs(vertcat(loco{x}(expt{x}.preRuns).Adown)), locoDiam_opts{x}.binSize ); 
         tempStateCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).stateDown), locoDiam_opts{x}.binSize );
 
         vascFrames = numel(vesselROI{1, x}{1,1}(1).projection(:, 2));
 
         if numel(tempStateCat) == (vascFrames + 1)
             %ALWAYS remove first scan. ONLY remove last scan if there is a difference of 2 frames
-            %tempVelocityCat = tempVelocityCat(2:end);
-            %tempAccelCat = tempAccelCat(2:end); 
+            tempVelocityCat = tempVelocityCat(2:end);
+            tempAccelCat = tempAccelCat(2:end); 
             tempStateCat = tempStateCat(2:end); 
         elseif numel(tempStateCat) == (vascFrames + 2)
             %ONLY remove last scan if there is a difference of 2 frames
-            %tempVelocityCat = tempVelocityCat(2:end-1);
-            %tempAccelCat = tempAccelCat(2:end-1); 
+            tempVelocityCat = tempVelocityCat(2:end-1);
+            tempAccelCat = tempAccelCat(2:end-1); 
             tempStateCat = tempStateCat(2:end-1);
         else
-            error('Unexpected mismatch in the number of elements of tempVelocityCat.');
+            %error('Unexpected mismatch in the number of elements of tempVelocityCat.');
             %Adjust frames based on Substack baseline (1-927). 
             %By default, 1st frame is removed when generating projection for vasculature, so for locomotion you should set substack for 2-928
-            %tempVelocityCat = tempVelocityCat(2:928);
-            %tempAccelCat = tempAccelCat(2:928); 
-            %tempStateCat = tempStateCat(2:928);
+            tempVelocityCat = tempVelocityCat(2:928);
+            tempAccelCat = tempAccelCat(2:928); 
+            tempStateCat = tempStateCat(2:928);
         end
 
     else %for multiple runs ONLY - adjust frame number of kinetics to match vascular projection
@@ -151,24 +151,19 @@ for x = xPresent % x3D %
             loco{x}(preRun).stateDown(1:15) = [];
         end
         % Define locomotion predictors
-        %tempVelocityCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).Vdown), locoDiam_opts{x}.binSize );
-        %tempAccelCat = BinDownMean( abs(vertcat(loco{x}(expt{x}.preRuns).Adown)), locoDiam_opts{x}.binSize ); 
+        tempVelocityCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).Vdown), locoDiam_opts{x}.binSize );
+        tempAccelCat = BinDownMean( abs(vertcat(loco{x}(expt{x}.preRuns).Adown)), locoDiam_opts{x}.binSize ); 
         tempStateCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).stateDown), locoDiam_opts{x}.binSize );
 
         %adjust frames based on Substack used
-        %tempVelocityCat = tempVelocityCat(200:5599); 
-        %tempAccelCat = tempAccelCat(200:5599);
+        tempVelocityCat = tempVelocityCat(200:5599); 
+        tempAccelCat = tempAccelCat(200:5599);
         tempStateCat = tempStateCat(200:5599);
     end
 
-    %Adjust frames based on Substack baseline (1-927). By default, 1st frame is removed when generating projection for vasculature, so you should set substack for 2-928
-    %tempVelocityCat = tempVelocityCat(1:927);
-    %tempAccelCat = tempAccelCat(1:927); 
-    tempStateCat = tempStateCat(1:927);
-
     locoDiam_pred{x} = struct('data',[], 'name',[], 'N',NaN, 'TB',[], 'lopo',[], 'fam',[]); 
-    locoDiam_pred{x}.data = tempStateCat(1:927);  
-    locoDiam_pred{x}.name = {'State'}; %{'Velocity', '|Accel|', 'State'};
+    locoDiam_pred{x}.data = tempVelocityCat(1:927);  
+    locoDiam_pred{x}.name = {'Velocity'}; %{'Velocity', '|Accel|', 'State'};
     locoDiam_pred{x}.N = size(locoDiam_pred{x}.data,2);
     for p = flip(1:locoDiam_pred{x}.N) 
         locoDiam_pred{x}.lopo.name{p} = ['No ',locoDiam_pred{x}.name{p}]; 
@@ -214,7 +209,7 @@ for x = xPresent % x3D %
 
     % Run the GLM
     locoDiam_opts{x}.load = false; % false; % 
-    locoDiam_opts{x}.saveRoot = 'D:\2photon\Simone\Simone_Macrophages\GLMs\locoDiam\'; %sprintf('%s', expt{x}.dir, 'GLMs\GLM_locoDiam\'); %''; %expt{x}.dir
+    locoDiam_opts{x}.saveRoot = 'D:\2photon\Simone\Simone_Macrophages\GLMs\velocityDiam\'; %sprintf('%s', expt{x}.dir, 'GLMs\GLM_locoDiam\'); %''; %expt{x}.dir
     mkdir (locoDiam_opts{x}.saveRoot);
     [locoDiam_result{x}, locoDiam_summary{x}, ~, locoDiam_pred{x}, locoDiam_resp{x}] = GLMparallel(locoDiam_pred{x}, locoDiam_resp{x}, locoDiam_opts{x}); 
     %locoDiam_summary{x} = SummarizeGLM(locoDiam_result{x}, locoDiam_pred{x}, locoDiam_resp{x}, locoDiam_opts{x});

@@ -34,7 +34,7 @@ diamFluor_result = cell(1,Nexpt);
 diamFluor_summary = cell(1,Nexpt);
 
 % Specify row number(X) within excel sheet
-xPresent = 52;
+xPresent = 50;
 Npresent = numel(xPresent);
 overwrite = false;
 

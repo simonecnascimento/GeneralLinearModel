@@ -63,7 +63,7 @@ classifiedData.Dura_P_Negative = GLM_diamFluor_Matrix(:, Dura_P_Negative);
 % All
 figure;
 x = (-60:60)';
-plot(x, classifiedData.Dura_P_Positive(:,:));
+plot(x, classifiedData.Dura_P_Negative(:,:));
 xlim([-60 60]); % Set x-axis limits
 xlabel('Delay (sec)');
 ylabel('Coefficient value');
@@ -71,10 +71,10 @@ ylabel('Coefficient value');
 grid on;
 
 % Individual positive coefficients
-for columns = 1:size(classifiedData.Dura_P_Positive,2)
+for columns = 1:size(classifiedData.Dura_P_Negative,2)
     %column = classifiedData.Dura_P_Positive(:,columns);
     figure;
-    plot(x, classifiedData.Dura_P_Positive(:,columns));
+    plot(x, classifiedData.Dura_P_Negative(:,columns));
     xlim([-60 60]); % Set x-axis limits
     xlabel('Delay (sec)');
     ylabel('Coefficient value');
