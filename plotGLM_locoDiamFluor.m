@@ -163,16 +163,12 @@ end
 [~, idx] = sortrows(sortKey);
 sortedFileNames = fileNames(idx);
 
-% % load table that have only perivascular cells with dev > 0.1
-% diamFluor_coefficients = 'D:\2photon\Simone\Simone_Macrophages\AQuA2_Results\fullCraniotomy\baseline\coefficients\coefficients.mat';
-% diamFluor_cells = load(diamFluor_coefficients);
-% diamFluor_cells = table2array(diamFluor_cells);
-
 % Initialize arrays
 coeff_positive = [];
 coeff_negative = [];
 delay_positive = [];
 delay_negative = [];
+cells_all = [];
 
 % INFO of cellIndexes
 %Pf4Ai162-2_221130_FOV2_vessel1 = [1]
@@ -198,27 +194,51 @@ delay_negative = [];
 %Pf4Ai162-13_230717_FOV5_vessel5 = []
 %Pf4Ai162-13_230717_FOV7_vessel3 = []
 
+cellIndices = {
+    [1];   % Pf4Ai162_2_221130_FOV2_vessel1 [1] - remove because delay does not match
+    [];    % Pf4Ai162_10_230628_FOV1_vessel1
+    [];    % Pf4Ai162_10_230628_FOV1_vessel2
+    [];    % Pf4Ai162_10_230628_FOV2_vessel1
+    [2];   % Pf4Ai162_10_230628_FOV3_vessel1
+    [];    % Pf4Ai162_10_230628_FOV8_vessel1
+    [];    % Pf4Ai162_11_230628_FOV3_vessel1
+    [1,2,3,4,5,6,8,9,10]; % Pf4Ai162_12_230717_FOV2_vessel1
+    [];    % Pf4Ai162_12_230717_FOV3_vessel2
+    [3];   % Pf4Ai162_12_230717_FOV4_vessel2
+    [];    % Pf4Ai162_12_230717_FOV5_vessel1
+    [2,3,4]; % Pf4Ai162_12_230717_FOV6_vessel1
+    [];    % Pf4Ai162_12_230717_FOV7_vessel3
+    [];    % Pf4Ai162_13_230717_FOV2_vessel2
+    [1,2,3,9,12,13]; % Pf4Ai162_13_230717_FOV3_vessel1
+    [];    % Pf4Ai162_13_230717_FOV3_vessel3
+    [];    % Pf4Ai162_13_230717_FOV4_vessel1
+    [6];   % Pf4Ai162_13_230717_FOV4_vessel3
+    [];    % Pf4Ai162_13_230717_FOV5_vessel1
+    [1,3,8,14,20,21]; % Pf4Ai162_13_230717_FOV5_vessel2
+    [];    % Pf4Ai162_13_230717_FOV5_vessel5
+    [];    % Pf4Ai162_13_230717_FOV7_vessel3
+};
+
 for x = 1:length(sortedFileNames)
     data = load(sortedFileNames{x});
     file = sortedFileNames{x};
     disp(file)
     for cellIdx = 1:length(data.Result)
         if data.Result(cellIdx).dev >= 0.1
-           perivascularToVessel = input(strcat('Is cell_', num2str(cellIdx), ' perivascular to this vessel? '));
-           if perivascularToVessel == 1
-               % get expt and cell info
-               cell = table(string(file), cellIdx, 'VariableNames', {'File', 'CellIndex'});
-               cells_all = [cells_all; cell];
-               % get coeff and delay
-               coeff_values = data.Result(cellIdx).coeff;
-               delay = data.Result(cellIdx).peakShift;
-               %separate cells by positive/negative coefficient
-               if data.Result(cellIdx).peakCoeff > 0
-                   coeff_positive = [coeff_positive, coeff_values]; 
-                   delay_positive = [delay_positive, delay];
-               elseif data.Result(cellIdx).peakCoeff < 0
-                   coeff_negative = [coeff_negative, coeff_values];
-               end
+            if ismember(cellIdx, cellIndices{x})
+                cell = table(string(file), cellIdx, 'VariableNames', {'File', 'CellIndex'});
+                cells_all = [cells_all; cell];
+                % get coeff and delay
+                coeff_values = data.Result(cellIdx).coeff;
+                delay = data.Result(cellIdx).peakShift;
+                %separate cells by positive/negative coefficient
+                if data.Result(cellIdx).peakCoeff > 0
+                    coeff_positive = [coeff_positive, coeff_values]; 
+                    delay_positive = [delay_positive, delay];
+                elseif data.Result(cellIdx).peakCoeff < 0
+                    coeff_negative = [coeff_negative, coeff_values];
+                    delay_negative = [delay_negative, delay];
+                end
            end
         end
     end
@@ -259,7 +279,7 @@ hold off; % Release the figure
 %% PLOT coeff_negative
 
 %remove cells that have doubt
-% removeCols = [1,8];  %1 = Pf4Ai162-2 FOV2 cell 1  %8 = Pf4Ai16212 FOV5 cell14
+% removeCols = [1];  %1 = Pf4Ai162-2 FOV2 cell 1
 % coeff_negative(:, removeCols) = [];
 
 x = (-60:60)'; % Column vector for x-axis
