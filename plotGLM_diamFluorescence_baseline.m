@@ -22,8 +22,10 @@ Dura_NP_Negative = [5,6,11,12,18:21,43,60,64,102,103,112];
 %Pia_P_Positive = [56,57,58,59,61,63,65,66];  
 Pia_P_Negative = [];
 Dura_P_Positive = [17,33,35,37,38,49,50,7,72,73,75,77,99];% duplicate 78,79,80,82,84,108
-Dura_P_Negative = [34,36,39:41,44,46:48,76,83,86,100,101,104,106,107]; %1 % duplicate 109:111,113,114
+Dura_P_Negative = [34,36,39:41,44,47,48,76,83,86,100,101,104,106,107]; %1 % duplicate 109:111,113,114
 
+
+x = (-60:60)'; % Column vector for x-axis
 %%
 % figure;
 % x = (-60:60)'; 
@@ -63,6 +65,7 @@ classifiedData.Dura_P_Negative = GLM_diamFluor_Matrix(:, Dura_P_Negative);
 % All
 figure;
 x = (-60:60)';
+
 plot(x, classifiedData.Dura_P_Negative(:,:));
 xlim([-60 60]); % Set x-axis limits
 xlabel('Delay (sec)');
@@ -102,6 +105,48 @@ ylabel('Coefficient value');
 title('Activated Macrophages');
 % legend({'Individual Curves', 'Mean Curve'});
 hold off; % Release the figure
+
+%% PAPER
+
+% Create a new figure
+
+blueC8 = [85, 160, 251] / 255; % Normalize to MATLAB's [0,1] scale
+
+figure;
+hold on;
+
+% Compute the mean and standard deviation across vessels
+meanCurve = mean(GLM_diamFluor_Matrix(:, Dura_P_Positive), 2, 'omitnan'); % Excludes NaNs if present
+stdCurve = std(GLM_diamFluor_Matrix(:, Dura_P_Positive), 0, 2, 'omitnan'); % Standard deviation
+
+% Define upper and lower bounds for shading
+y_upper = meanCurve + stdCurve;
+y_lower = meanCurve - stdCurve;
+
+% Plot shaded region for individual variation
+fill([x; flipud(x)], [y_upper; flipud(y_lower)], blueC8, 'FaceAlpha', 0.05, 'EdgeColor', 'none');
+
+% Plot the mean curve in a distinct color (e.g., red, thicker line)
+h2 = plot(x, meanCurve, 'k', 'LineWidth', 1);
+
+% Formatting
+xlim([-60 60]);
+xlabel('Delay (sec)');
+ylabel('Coefficient value');
+%title('Pia Vessel Response to Locomotion State');
+grid off;
+
+% Create legend
+%legend({'Mean ± SD', 'Mean Curve'}, 'Location', 'Best');
+ax = gca;
+ax.FontSize = 16; 
+set(gca, 'Color', 'w'); % Ensure the background is white
+set(findall(gca, 'Type', 'patch'), 'FaceAlpha', 1); % Make patches fully opaque
+set(gca, 'TickDir', 'out'); % Make tick marks point outward
+%set(findall(gca, 'Type', 'line'), 'Color', [0 0 0]); % Ensure line colors are solid
+
+hold off;
+
 
 %% DURA PERIVASCULAR NEGATIVE
 
@@ -146,6 +191,47 @@ ylabel('Coefficient value');
 title('Activated Macrophages');
 % legend({'Individual Curves', 'Mean Curve'});
 hold off; % Release the figure
+
+%% PAPER
+
+% Create a new figure
+
+pinkC3 = [255, 128, 128] / 255; % Normalize to MATLAB's [0,1] scale
+
+figure;
+hold on;
+
+% Compute the mean and standard deviation across vessels
+meanCurve = mean(GLM_diamFluor_Matrix(:, Dura_P_Negative), 2, 'omitnan'); % Excludes NaNs if present
+stdCurve = std(GLM_diamFluor_Matrix(:, Dura_P_Negative), 0, 2, 'omitnan'); % Standard deviation
+
+% Define upper and lower bounds for shading
+y_upper = meanCurve + stdCurve;
+y_lower = meanCurve - stdCurve;
+
+% Plot shaded region for individual variation
+fill([x; flipud(x)], [y_upper; flipud(y_lower)], pinkC3, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+
+% Plot the mean curve in a distinct color (e.g., red, thicker line)
+h2 = plot(x, meanCurve, 'k', 'LineWidth', 1);
+
+% Formatting
+xlim([-60 60]);
+xlabel('Delay (sec)');
+ylabel('Coefficient value');
+%title('Pia Vessel Response to Locomotion State');
+grid off;
+
+% Create legend
+%legend({'Mean ± SD', 'Mean Curve'}, 'Location', 'Best');
+ax = gca;
+ax.FontSize = 16; 
+set(gca, 'Color', 'w'); % Ensure the background is white
+set(findall(gca, 'Type', 'patch'), 'FaceAlpha', 1); % Make patches fully opaque
+set(gca, 'TickDir', 'out'); % Make tick marks point outward
+%set(findall(gca, 'Type', 'line'), 'Color', [0 0 0]); % Ensure line colors are solid
+
+hold off;
 
 %%
 % Define the number of columns in your matrix
@@ -313,3 +399,18 @@ grid on;
 % legend({'Individual Curves', 'Mean Curve'});
 
 hold off; % Release the figure
+
+%% CENTER OF MASS PIA and DURA 
+
+% Given time series data
+T = (1:size(GLM_diamFluor_Matrix, 1))'; % Time points
+
+% Compute center of mass for each column
+COM = sum(T .* abs(GLM_diamFluor_Matrix), 1) ./ sum(abs(GLM_diamFluor_Matrix), 1);
+COM_relative = COM - 60;
+
+COM_duraPositive = COM_relative(Dura_P_Positive);
+COM_duraPositive_average = mean(COM_duraPositive);
+
+COM_duraNegative = COM_relative(Dura_P_Negative);
+COM_duraNegative_average = mean(COM_duraNegative);

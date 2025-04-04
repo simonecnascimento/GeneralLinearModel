@@ -5,7 +5,7 @@ diamFluorDir = 'D:\2photon\Simone\Simone_Macrophages\GLMs\diamFluor';
 cd(diamFluorDir);
 
 %% expt name
-diamFluorExpt = 'Pf4Ai162-13_230719_FOV5_run1_reg_Z01_green_Substack(1-927)_GLM_diamFluor_baseline_vessel2_results';
+diamFluorExpt = 'Pf4Ai162-12_230717_FOV2_run1_reg_Z01_green_Substack(1-927)_GLM_diamFluor_baseline_vessel1_results';
 diamFluorData = load(diamFluorExpt);
 
 tokens = regexp(diamFluorExpt, 'vessel(\d+)', 'tokens'); % Find 'vessel' followed by a number
@@ -23,7 +23,7 @@ locoDiamExpt = strcat(FOV, '_GLM_locoDiam_baseline_results');
 locoDiamData = load(locoDiamExpt);
 
 %plot
-GLMresultFig = figure('WindowState','maximized', 'color','w');
+GLMresultFig = figure('WindowState', 'normal', 'color','w');
 leftOpt = {[0.02,0.04], [0.08,0.03], [0.04,0.02]};  % {[vert, horz], [bottom, top], [left, right] }
 rightOpt = {[0.04,0.04], [0.08,0.01], [0.04,0.01]}; 
 xAngle = 25;
@@ -195,7 +195,7 @@ cells_all = [];
 %Pf4Ai162-13_230717_FOV7_vessel3 = []
 
 cellIndices = {
-    [1];   % Pf4Ai162_2_221130_FOV2_vessel1 [1] - remove because delay does not match
+    [];   % Pf4Ai162_2_221130_FOV2_vessel1 [1] - remove because delay does not match
     [];    % Pf4Ai162_10_230628_FOV1_vessel1
     [];    % Pf4Ai162_10_230628_FOV1_vessel2
     [];    % Pf4Ai162_10_230628_FOV2_vessel1
@@ -246,6 +246,7 @@ end
 
 %% PLOT coeff_positive
 
+%coeff_positive
 x = (-60:60)'; % Column vector for x-axis
 
 % Individual + Mean
@@ -312,6 +313,38 @@ grid off;
 
 hold off; % Release the figure
 
+%% plot delays
+
+% Calculate Mean and Standard Error
+mean_delay_positive = mean(delay_positive);
+mean_delay_negative = mean(delay_negative);
+std_error_positive = std(delay_positive) / sqrt(length(delay_positive));
+std_error_negative = std(delay_negative) / sqrt(length(delay_negative));
+
+% Create a figure
+figure;
+
+% Bar Graph Data
+bar_values = [mean_delay_positive, mean_delay_negative];
+std_errors = [std_error_positive, std_error_negative];
+
+% Plot Bar Graph
+bar_handle = bar(bar_values, 'FaceColor', 'flat'); % Default bar plot
+
+% Hold to add error bars
+hold on;
+
+% Add error bars
+errorbar(1:2, bar_values, std_errors, 'k', 'linestyle', 'none', 'LineWidth', 1.5);
+
+% Customize appearance
+set(gca, 'XTickLabel', {'+Coeff(same dir.)', '-Coeff(opposite dir.)'}); % Label bars
+ylabel('Mean Delay');
+%title('Comparison of Positive and Negative Delays');
+grid on;
+set(gca, 'FontSize', 12);
+
+hold off;
 
 %%
 % Plot positive peakCoeff

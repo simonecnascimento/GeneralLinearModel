@@ -36,19 +36,19 @@ NvesselROI = cell(1,Nexpt);
 tifStackMax = cell(1,Nexpt); 
 
 % Use GLM to assess contribution of different variables
-locoDiam_pred = cell(1,Nexpt); %predictors
-locoDiam_resp = cell(1,Nexpt); %response
-locoDiam_opts = cell(1,Nexpt); %options
-locoDiam_result = cell(1,Nexpt); 
-locoDiam_summary = cell(1,Nexpt);
+velocityDiam_pred = cell(1,Nexpt); %predictors
+velocityDiam_resp = cell(1,Nexpt); %response
+velocityDiam_opts = cell(1,Nexpt); %options
+velocityDiam_result = cell(1,Nexpt); 
+velocityDiam_summary = cell(1,Nexpt);
 
 % TODO --- Specify xPresent - row number(X) within excel sheet
-xPresent = 38; %[18,22,24,30:32]; % flip(100:102); %45:47; % [66:69];
+xPresent = 5; %[18,22,24,30:32]; % flip(100:102); %45:47; % [66:69];
 Npresent = numel(xPresent);
 overwrite = false;
 
-GLMname = 'GLM_velocityDiam_baseline'; %'GLM_locoDiam_baseline' loco - all lomotion predictors
-figDir = 'D:\2photon\Simone\Simone_Macrophages\GLMs\stateDiam\';  % CSD figures\
+GLMname = 'GLM_velocityDiam_baseline';
+figDir = 'D:\2photon\Simone\Simone_Macrophages\GLMs\velocityDiam\';  % CSD figures\
 mkdir( figDir );
 
 % Set GLM rate
@@ -65,40 +65,40 @@ for x = xPresent % x3D %
 
     % Set GLMparallel options
     % housekeeping
-    locoDiam_opts{x}.name = sprintf('%s_%s', expt{x}.name, GLMname); %strcat(expt{x}.name, , '_preCSDglm');
-    locoDiam_opts{x}.rShow = NaN;
-    locoDiam_opts{x}.figDir = ''; % figDir;
+    velocityDiam_opts{x}.name = sprintf('%s_%s', expt{x}.name, GLMname); %strcat(expt{x}.name, , '_preCSDglm');
+    velocityDiam_opts{x}.rShow = NaN;
+    velocityDiam_opts{x}.figDir = ''; % figDir;
 
     % Signal processing parameters
-    locoDiam_opts{x}.trainFrac = 0.75; % 1; %
-    locoDiam_opts{x}.Ncycle = 20;
-    locoDiam_opts{x}.minDev = 0.1; %0.05
-    locoDiam_opts{x}.minDevFrac = 0.1;
-    locoDiam_opts{x}.maxP = 0.05;
-    locoDiam_opts{x}.Nshuff = 0;  
-    locoDiam_opts{x}.minShuff = 15; %??
-    locoDiam_opts{x}.window = [-60,60]; % [0,0]; % [-0.5, 0.5]; %consider temporal shifts this many seconds after/before response
-    locoDiam_opts{x}.lopo = true; %false; %LOPO = Leave One Predictor Out
+    velocityDiam_opts{x}.trainFrac = 0.75; % 1; %
+    velocityDiam_opts{x}.Ncycle = 20;
+    velocityDiam_opts{x}.minDev = 0.1; %0.05
+    velocityDiam_opts{x}.minDevFrac = 0.1;
+    velocityDiam_opts{x}.maxP = 0.05;
+    velocityDiam_opts{x}.Nshuff = 0;  
+    velocityDiam_opts{x}.minShuff = 15; %??
+    velocityDiam_opts{x}.window = [-60,60]; % [0,0]; % [-0.5, 0.5]; %consider temporal shifts this many seconds after/before response
+    velocityDiam_opts{x}.lopo = true; %false; %LOPO = Leave One Predictor Out
 
     % Downsample data to GLMrate target 
-    locoDiam_opts{x}.frameRate = GLMrate;  % GLMrate; %expt{x}.scanRate
-    locoDiam_opts{x}.binSize = max([1,round(expt{x}.scanRate/GLMrate)]); 
-    locoDiam_opts{x}.minShuffFrame = round( locoDiam_opts{x}.frameRate*locoDiam_opts{x}.minShuff );
-    windowFrame = [ceil(locoDiam_opts{x}.window(1)*locoDiam_opts{x}.frameRate), floor(locoDiam_opts{x}.window(2)*locoDiam_opts{x}.frameRate)];
+    velocityDiam_opts{x}.frameRate = GLMrate;  % GLMrate; %expt{x}.scanRate
+    velocityDiam_opts{x}.binSize = max([1,round(expt{x}.scanRate/GLMrate)]); 
+    velocityDiam_opts{x}.minShuffFrame = round( velocityDiam_opts{x}.frameRate*velocityDiam_opts{x}.minShuff );
+    windowFrame = [ceil(velocityDiam_opts{x}.window(1)*velocityDiam_opts{x}.frameRate), floor(velocityDiam_opts{x}.window(2)*velocityDiam_opts{x}.frameRate)];
     %windowFrame = round(locoDiam_opts{x}.window*locoDiam_opts{x}.frameRate); %window(sec)*frameRate
-    locoDiam_opts{x}.shiftFrame = windowFrame(1):windowFrame(2);
-    locoDiam_opts{x}.maxShift = max( abs(windowFrame) );
-    locoDiam_opts{x}.Nshift = numel( locoDiam_opts{x}.shiftFrame );  %Nshift = preCSDOpts(x).Nshift;
-    locoDiam_opts{x}.lags = locoDiam_opts{x}.shiftFrame/locoDiam_opts{x}.frameRate; %[-sec,+sec]
-    locoDiam_opts{x}.xVar = 'Time';
+    velocityDiam_opts{x}.shiftFrame = windowFrame(1):windowFrame(2);
+    velocityDiam_opts{x}.maxShift = max( abs(windowFrame) );
+    velocityDiam_opts{x}.Nshift = numel( velocityDiam_opts{x}.shiftFrame );  %Nshift = preCSDOpts(x).Nshift;
+    velocityDiam_opts{x}.lags = velocityDiam_opts{x}.shiftFrame/velocityDiam_opts{x}.frameRate; %[-sec,+sec]
+    velocityDiam_opts{x}.xVar = 'Time';
 
     % GLMnet parameters - don't change without a good reason
-    locoDiam_opts{x}.distribution = 'gaussian'; % 'poisson'; %  
-    locoDiam_opts{x}.CVfold = 10;
-    locoDiam_opts{x}.nlamda = 1000;
-    locoDiam_opts{x}.maxit = 5*10^5;
-    locoDiam_opts{x}.alpha = 0.01;  % The regularization parameter, default is 0.01
-    locoDiam_opts{x}.standardize = true; 
+    velocityDiam_opts{x}.distribution = 'gaussian'; % 'poisson'; %  
+    velocityDiam_opts{x}.CVfold = 10;
+    velocityDiam_opts{x}.nlamda = 1000;
+    velocityDiam_opts{x}.maxit = 5*10^5;
+    velocityDiam_opts{x}.alpha = 0.01;  % The regularization parameter, default is 0.01
+    velocityDiam_opts{x}.standardize = true; 
 
     % PREDICTOR - LOCOMOTION
     % Get locomotion data
@@ -119,29 +119,29 @@ for x = xPresent % x3D %
     % Concatenate input variables pre-CSD
     % Define locomotion predictors
     if expt{x}.Nruns == 1  %for single runs ONLY - adjust frame number of kinetics to match vascular projection
-        tempVelocityCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).Vdown), locoDiam_opts{x}.binSize );
-        tempAccelCat = BinDownMean( abs(vertcat(loco{x}(expt{x}.preRuns).Adown)), locoDiam_opts{x}.binSize ); 
-        tempStateCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).stateDown), locoDiam_opts{x}.binSize );
+        %tempVelocityCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).Vdown), locoDiam_opts{x}.binSize );
+        %tempAccelCat = BinDownMean( abs(vertcat(loco{x}(expt{x}.preRuns).Adown)), locoDiam_opts{x}.binSize ); 
+        tempStateCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).stateDown), velocityDiam_opts{x}.binSize );
 
         vascFrames = numel(vesselROI{1, x}{1,1}(1).projection(:, 2));
 
         if numel(tempStateCat) == (vascFrames + 1)
             %ALWAYS remove first scan. ONLY remove last scan if there is a difference of 2 frames
-            tempVelocityCat = tempVelocityCat(2:end);
-            tempAccelCat = tempAccelCat(2:end); 
+            %tempVelocityCat = tempVelocityCat(2:end);
+            %tempAccelCat = tempAccelCat(2:end); 
             tempStateCat = tempStateCat(2:end); 
         elseif numel(tempStateCat) == (vascFrames + 2)
             %ONLY remove last scan if there is a difference of 2 frames
             tempVelocityCat = tempVelocityCat(2:end-1);
-            tempAccelCat = tempAccelCat(2:end-1); 
-            tempStateCat = tempStateCat(2:end-1);
+            %tempAccelCat = tempAccelCat(2:end-1); 
+            %tempStateCat = tempStateCat(2:end-1);
         else
-            %error('Unexpected mismatch in the number of elements of tempVelocityCat.');
+            error('Unexpected mismatch in the number of elements of tempVelocityCat.');
             %Adjust frames based on Substack baseline (1-927). 
             %By default, 1st frame is removed when generating projection for vasculature, so for locomotion you should set substack for 2-928
-            tempVelocityCat = tempVelocityCat(2:928);
-            tempAccelCat = tempAccelCat(2:928); 
-            tempStateCat = tempStateCat(2:928);
+            %tempVelocityCat = tempVelocityCat(2:928);
+            %tempAccelCat = tempAccelCat(2:928); 
+            %tempStateCat = tempStateCat(2:928);
         end
 
     else %for multiple runs ONLY - adjust frame number of kinetics to match vascular projection
@@ -152,27 +152,32 @@ for x = xPresent % x3D %
         end
         % Define locomotion predictors
         tempVelocityCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).Vdown), locoDiam_opts{x}.binSize );
-        tempAccelCat = BinDownMean( abs(vertcat(loco{x}(expt{x}.preRuns).Adown)), locoDiam_opts{x}.binSize ); 
-        tempStateCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).stateDown), locoDiam_opts{x}.binSize );
+        %tempAccelCat = BinDownMean( abs(vertcat(loco{x}(expt{x}.preRuns).Adown)), locoDiam_opts{x}.binSize ); 
+        %tempStateCat = BinDownMean( vertcat(loco{x}(expt{x}.preRuns).stateDown), locoDiam_opts{x}.binSize );
 
         %adjust frames based on Substack used
         tempVelocityCat = tempVelocityCat(200:5599); 
-        tempAccelCat = tempAccelCat(200:5599);
-        tempStateCat = tempStateCat(200:5599);
+        %tempAccelCat = tempAccelCat(200:5599);
+        %tempStateCat = tempStateCat(200:5599);
     end
 
-    locoDiam_pred{x} = struct('data',[], 'name',[], 'N',NaN, 'TB',[], 'lopo',[], 'fam',[]); 
-    locoDiam_pred{x}.data = tempVelocityCat(1:927);  
-    locoDiam_pred{x}.name = {'Velocity'}; %{'Velocity', '|Accel|', 'State'};
-    locoDiam_pred{x}.N = size(locoDiam_pred{x}.data,2);
-    for p = flip(1:locoDiam_pred{x}.N) 
-        locoDiam_pred{x}.lopo.name{p} = ['No ',locoDiam_pred{x}.name{p}]; 
+    %Adjust frames based on Substack baseline (1-927). By default, 1st frame is removed when generating projection for vasculature, so you should set substack for 2-928
+    tempVelocityCat = tempVelocityCat(1:927);
+    %tempAccelCat = tempAccelCat(1:927); 
+    %tempStateCat = tempStateCat(1:927);
+
+    velocityDiam_pred{x} = struct('data',[], 'name',[], 'N',NaN, 'TB',[], 'lopo',[], 'fam',[]); 
+    velocityDiam_pred{x}.data = tempStateCat(1:927);  
+    velocityDiam_pred{x}.name = {'Velocity'}; %{'Velocity', '|Accel|', 'State'};
+    velocityDiam_pred{x}.N = size(velocityDiam_pred{x}.data,2);
+    for p = flip(1:velocityDiam_pred{x}.N) 
+        velocityDiam_pred{x}.lopo.name{p} = ['No ',velocityDiam_pred{x}.name{p}]; 
     end
     
     % Set up leave-one-family-out
-    locoDiam_pred{x}.fam.col = {}; %{1:4, 5:7}; %{1:2, 3:4, 5:6, 7:8, 9:10, 11:12};  % {1:12};%{1, 2:3, 4:5, 6:7, 8, 9}; 
-    locoDiam_pred{x}.fam.N = numel(locoDiam_pred{x}.fam.col); 
-    locoDiam_pred{x}.fam.name = {}; %{'All'};%  'Onset Time',
+    velocityDiam_pred{x}.fam.col = {}; %{1:4, 5:7}; %{1:2, 3:4, 5:6, 7:8, 9:10, 11:12};  % {1:12};%{1, 2:3, 4:5, 6:7, 8, 9}; 
+    velocityDiam_pred{x}.fam.N = numel(velocityDiam_pred{x}.fam.col); 
+    velocityDiam_pred{x}.fam.name = {}; %{'All'};%  'Onset Time',
 
     % RESPONSE - VASCULATURE
     
@@ -193,25 +198,25 @@ for x = xPresent % x3D %
     allDiamZ = zscore(allDiam, [], 1); %the mean and standard deviation are calculated for each column
     diamResp = allDiamZ; %BinDownMean( allDiamZ, locoDiam_opts{x}.binSize ); % allDiam
 
-    locoDiam_resp{x}.data = diamResp;  %diamResp SCN 240102
-    locoDiam_resp{x}.N = size(locoDiam_resp{x}.data, 2); 
-    locoDiam_resp{x}.name = sprintfc('Diameter %i', 1:locoDiam_resp{x}.N);
+    velocityDiam_resp{x}.data = diamResp;  %diamResp SCN 240102
+    velocityDiam_resp{x}.N = size(velocityDiam_resp{x}.data, 2); 
+    velocityDiam_resp{x}.name = sprintfc('Diameter %i', 1:velocityDiam_resp{x}.N);
  
     % Remove scans with missing data 
-    nanFrame = find(any(isnan([locoDiam_pred{x}.data, locoDiam_resp{x}.data]),2)); % find( isnan(sum(pred(x).data,2)) ); 
+    nanFrame = find(any(isnan([velocityDiam_pred{x}.data, velocityDiam_resp{x}.data]),2)); % find( isnan(sum(pred(x).data,2)) ); 
     fprintf('\nRemoving %i NaN-containing frames', numel(nanFrame));
-    locoDiam_pred{x}.data(nanFrame,:) = []; 
-    locoDiam_resp{x}.data(nanFrame,:) = [];
+    velocityDiam_pred{x}.data(nanFrame,:) = []; 
+    velocityDiam_resp{x}.data(nanFrame,:) = [];
 
     % GLM name update by vessel
 %     GLMname_vessel = sprintf('GLM_locoDiam_baseline_vessel%i', vessel);
 %     locoDiam_opts{x}.name = sprintf('%s_%s', expt{x}.name, GLMname_vessel); 
 
     % Run the GLM
-    locoDiam_opts{x}.load = false; % false; % 
-    locoDiam_opts{x}.saveRoot = 'D:\2photon\Simone\Simone_Macrophages\GLMs\velocityDiam\'; %sprintf('%s', expt{x}.dir, 'GLMs\GLM_locoDiam\'); %''; %expt{x}.dir
-    mkdir (locoDiam_opts{x}.saveRoot);
-    [locoDiam_result{x}, locoDiam_summary{x}, ~, locoDiam_pred{x}, locoDiam_resp{x}] = GLMparallel(locoDiam_pred{x}, locoDiam_resp{x}, locoDiam_opts{x}); 
+    velocityDiam_opts{x}.load = false; % false; % 
+    velocityDiam_opts{x}.saveRoot = 'D:\2photon\Simone\Simone_Macrophages\GLMs\speedDiam\'; %sprintf('%s', expt{x}.dir, 'GLMs\GLM_locoDiam\'); %''; %expt{x}.dir
+    mkdir (velocityDiam_opts{x}.saveRoot);
+    [velocityDiam_result{x}, velocityDiam_summary{x}, ~, velocityDiam_pred{x}, velocityDiam_resp{x}] = GLMparallel(velocityDiam_pred{x}, velocityDiam_resp{x}, velocityDiam_opts{x}); 
     %locoDiam_summary{x} = SummarizeGLM(locoDiam_result{x}, locoDiam_pred{x}, locoDiam_resp{x}, locoDiam_opts{x});
 end
 
@@ -220,9 +225,9 @@ end
 
 % Show results
 for x = xPresent
-    locoDiam_opts{x}.rShow = 1:sum(NvesselROI{x}); %1:locoDiam_resp{x}.N; % 1:LocoDeform_resp{x}.N; %NaN;
-    locoDiam_opts{x}.xVar = 'Time';
-    ViewGLM(locoDiam_pred{x}, locoDiam_resp{x}, locoDiam_opts{x}, locoDiam_result{x}, locoDiam_summary{x});
+    velocityDiam_opts{x}.rShow = 1:sum(NvesselROI{x}); %1:locoDiam_resp{x}.N; % 1:LocoDeform_resp{x}.N; %NaN;
+    velocityDiam_opts{x}.xVar = 'Time';
+    ViewGLM(velocityDiam_pred{x}, velocityDiam_resp{x}, velocityDiam_opts{x}, velocityDiam_result{x}, velocityDiam_summary{x});
     %ViewGLM(Pred, Resp, Opts, Result, Summ)%GLMresultFig = 
 end
 
@@ -233,24 +238,24 @@ opt = {[0.02,0.07], [0.06,0.03], [0.04,0.02]};  % {[vert, horz], [bottom, top], 
 rightOpt = {[0.1,0.07], [0.1,0.03], [0.04,0.02]};  % {[vert, horz], [bottom, top], [left, right] }\
 jitterWidth = 0.45;
 xAngle = 30;
-Nrow = locoDiam_pred{xPresent(1)}(1).N+1; 
+Nrow = velocityDiam_pred{xPresent(1)}(1).N+1; 
 Ncol = 3;
 spGrid = reshape( 1:Nrow*Ncol, Ncol, Nrow )';
 for x = xPresent
-    sp(locoDiam_pred{x}.N+1) = subtightplot(locoDiam_pred{x}.N+1, 3, 1:2, opt{:});
-    imagesc( locoDiam_resp{x}.data' );
+    sp(velocityDiam_pred{x}.N+1) = subtightplot(velocityDiam_pred{x}.N+1, 3, 1:2, opt{:});
+    imagesc( velocityDiam_resp{x}.data' );
     ylabel('Diameter', 'Interpreter','none');
     title( sprintf('%s', expt{x}.name), 'Interpreter','none');
     set(gca,'TickDir','out', 'TickLength',[0.003,0], 'box','off', 'Xtick',[]); % , 'Ytick',onStruct(x).fluor.responder
-    text( repmat(size(locoDiam_resp{x}.data,1)+1, locoDiam_summary{x}.Ngood, 1), locoDiam_summary{x}.rGood+0.5, '*', 'VerticalAlignment','middle', 'FontSize',8);
+    text( repmat(size(velocityDiam_resp{x}.data,1)+1, velocityDiam_summary{x}.Ngood, 1), velocityDiam_summary{x}.rGood+0.5, '*', 'VerticalAlignment','middle', 'FontSize',8);
     impixelinfo;
     
-    for v = 1:locoDiam_pred{x}.N
+    for v = 1:velocityDiam_pred{x}.N
         sp(v) = subtightplot(Nrow, Ncol, spGrid(v+1,1:2), opt{:});
-        plot( locoDiam_pred{x}.data(:,v) ); hold on;
-        ylabel(locoDiam_pred{x}.name{v}, 'Interpreter','none');
+        plot( velocityDiam_pred{x}.data(:,v) ); hold on;
+        ylabel(velocityDiam_pred{x}.name{v}, 'Interpreter','none');
         xlim([-Inf,Inf]);
-        if v < locoDiam_pred{x}.N
+        if v < velocityDiam_pred{x}.N
             set(gca,'TickDir','out', 'TickLength',[0.003,0], 'box','off', 'XtickLabel',[]);
         else
             set(gca,'TickDir','out', 'TickLength',[0.003,0], 'box','off');
@@ -261,7 +266,7 @@ for x = xPresent
     %expt{x}.Nroi = size(diamResp,2); %SCN 231020
 
     subtightplot(3,3,3, rightOpt{:});
-    bar([locoDiam_summary{x}.Ngood]/expt{x}.Nroi ); % numel(onStruct(x).fluor.responder),   , numel(rLocoPreFit{x})
+    bar([velocityDiam_summary{x}.Ngood]/expt{x}.Nroi ); % numel(onStruct(x).fluor.responder),   , numel(rLocoPreFit{x})
     set(gca,'Xtick',1, 'XtickLabel',{'Fit'}, 'box','off'); % 'Loco','Fit','Both'  :3
     ylabel('Fraction of ROI');
     ylim([0,1]);
@@ -269,23 +274,23 @@ for x = xPresent
 
     %lopo
     subtightplot(3,3,6, rightOpt{:});
-    JitterPlot( locoDiam_summary{x}.lopo.devFrac(:,locoDiam_summary{x}.rGood)', jitterWidth ); hold on;
-    line([0,locoDiam_pred{x}.N+1], [1,1], 'color','k', 'lineStyle','--');
-    xlim([0,locoDiam_pred{x}.N+1]); 
+    JitterPlot( velocityDiam_summary{x}.lopo.devFrac(:,velocityDiam_summary{x}.rGood)', jitterWidth ); hold on;
+    line([0,velocityDiam_pred{x}.N+1], [1,1], 'color','k', 'lineStyle','--');
+    xlim([0,velocityDiam_pred{x}.N+1]); 
     ylim([0,Inf]); 
     ylabel('Fraction of total deviance'); 
     title('Leave One Predictor Out (well-fit units only)');
-    set(gca, 'Xtick',1:locoDiam_pred{x}.N,  'XtickLabel', locoDiam_summary{x}.lopo.name, 'TickDir','out', 'TickLength',[0.003,0], 'TickLabelInterpreter','none', 'box','off' ); 
+    set(gca, 'Xtick',1:velocityDiam_pred{x}.N,  'XtickLabel', velocityDiam_summary{x}.lopo.name, 'TickDir','out', 'TickLength',[0.003,0], 'TickLabelInterpreter','none', 'box','off' ); 
     xtickangle(xAngle);
     
     %lofo - locoDiam_summary{x}.lofo - not determined yet
     subtightplot(3,3,9, rightOpt{:});
-    JitterPlot( locoDiam_summary{x}.lofo.devFrac(:,locoDiam_summary{x}.rGood)', jitterWidth ); hold on;
-    line([0,locoDiam_pred{x}.fam.N]+0.5, [1,1], 'color','k', 'lineStyle','--');
-    xlim([0,locoDiam_pred{x}.fam.N]+0.5);
+    JitterPlot( velocityDiam_summary{x}.lofo.devFrac(:,velocityDiam_summary{x}.rGood)', jitterWidth ); hold on;
+    line([0,velocityDiam_pred{x}.fam.N]+0.5, [1,1], 'color','k', 'lineStyle','--');
+    xlim([0,velocityDiam_pred{x}.fam.N]+0.5);
     ylabel('Fraction of total deviance'); 
     title('Leave One Family Out (well-fit units only)');
-    set(gca, 'Xtick',1:locoDiam_pred{x}.fam.N,  'XtickLabel', locoDiam_summary{x}.lofo.name, 'TickDir','out', 'TickLength',[0.003,0], 'TickLabelInterpreter','none', 'box','off' ); 
+    set(gca, 'Xtick',1:velocityDiam_pred{x}.fam.N,  'XtickLabel', velocityDiam_summary{x}.lofo.name, 'TickDir','out', 'TickLength',[0.003,0], 'TickLabelInterpreter','none', 'box','off' ); 
     xtickangle(xAngle);
     ylim([0,Inf]);
     
@@ -304,18 +309,18 @@ for x = xPresent
     %pause; clf;
 end
 %%
-for x = find(~cellfun(@isempty, locoDiam_result)) %  xPresent
-    locoDiam_opts{x}.rShow = locoDiam_summary{x}.rGood; % 2; %1:7; %1:LocoDeform_resp{x}.N; %NaN; % 1:LocoDeform_resp{x}.N; %NaN;
-    locoDiam_opts{x}.xVar = 'Time';
-    ViewGLM(locoDiam_pred{x}, locoDiam_resp{x}, locoDiam_opts{x}, locoDiam_result{x}, locoDiam_summary{x}); %GLMresultFig = 
+for x = find(~cellfun(@isempty, velocityDiam_result)) %  xPresent
+    velocityDiam_opts{x}.rShow = velocityDiam_summary{x}.rGood; % 2; %1:7; %1:LocoDeform_resp{x}.N; %NaN; % 1:LocoDeform_resp{x}.N; %NaN;
+    velocityDiam_opts{x}.xVar = 'Time';
+    ViewGLM(velocityDiam_pred{x}, velocityDiam_resp{x}, velocityDiam_opts{x}, velocityDiam_result{x}, velocityDiam_summary{x}); %GLMresultFig = 
 end
 
 %% Divide units into Insensitiveensitive, Mixed, loco-only or deformation-only units
 locoDiam_Nsubtype = []; k = 0;
-for x = intersect( find(~cellfun(@isempty, locoDiam_result)), xPresent ) %xPresent
+for x = intersect( find(~cellfun(@isempty, velocityDiam_result)), xPresent ) %xPresent
    
     k = k+1;
-    locoDiam_Nsubtype(k,:) = [locoDiam_summary{x}.nInsensitive, locoDiam_summary{x}.nMixed, locoDiam_summary{x}.nDeform, locoDiam_summary{x}.nLoco]; % /expt{x}.Nroi
+    locoDiam_Nsubtype(k,:) = [velocityDiam_summary{x}.nInsensitive, velocityDiam_summary{x}.nMixed, velocityDiam_summary{x}.nDeform, velocityDiam_summary{x}.nLoco]; % /expt{x}.Nroi
 end
 locoDiam_Nsubtype(k+1,:) = sum(locoDiam_Nsubtype, 1);
 locoDiam_subtypeFrac = locoDiam_Nsubtype./repmat( sum(locoDiam_Nsubtype,2), 1, 4);
@@ -324,16 +329,16 @@ bar(locoDiam_subtypeFrac,'stacked')
 
 %% Show single examples of each subtype
 for x = 30 %xPresent
-    locoDiam_opts{x}.xVar = 'Time';
+    velocityDiam_opts{x}.xVar = 'Time';
     %{
     if locoDiam_summary{x}.nMixed > 0
         locoDiam_opts{x}.rShow = locoDiam_summary{x}.rMixed;
         ViewGLM(locoDiam_pred{x}, locoDiam_resp{x}, locoDiam_opts{x}, locoDiam_result{x}, locoDiam_summary{x});
     end
     %}
-    if locoDiam_summary{x}.nDeform > 0
-        locoDiam_opts{x}.rShow = locoDiam_summary{x}.rDeform;
-        ViewGLM(locoDiam_pred{x}, locoDiam_resp{x}, locoDiam_opts{x}, locoDiam_result{x}, locoDiam_summary{x});
+    if velocityDiam_summary{x}.nDeform > 0
+        velocityDiam_opts{x}.rShow = velocityDiam_summary{x}.rDeform;
+        ViewGLM(velocityDiam_pred{x}, velocityDiam_resp{x}, velocityDiam_opts{x}, velocityDiam_result{x}, velocityDiam_summary{x});
     end
     %{
     if locoDiam_summary{x}.nLoco > 0
@@ -347,10 +352,10 @@ end
 preCSDdevPool = []; goodDevPool = [];
 preCSDdevFracPool = []; %lofoDevFracPool = [];
 for x = xPresent%find(~cellfun(@isempty, rLocoPreFit))
-    if ~isempty( locoDiam_summary{x}.rGood )
-        preCSDdevPool = [preCSDdevPool, locoDiam_summary{x}.dev]; 
-        goodDevPool = [goodDevPool, locoDiam_summary{x}.dev( locoDiam_summary{x}.rGood )];
-        preCSDdevFracPool = [preCSDdevFracPool, vertcat(locoDiam_summary{x}.lopo.devFrac(:,locoDiam_summary{x}.rGood), locoDiam_summary{x}.lofo.devFrac(:,locoDiam_summary{x}.rGood) )]; % rLocoPreFit{x}, :
+    if ~isempty( velocityDiam_summary{x}.rGood )
+        preCSDdevPool = [preCSDdevPool, velocityDiam_summary{x}.dev]; 
+        goodDevPool = [goodDevPool, velocityDiam_summary{x}.dev( velocityDiam_summary{x}.rGood )];
+        preCSDdevFracPool = [preCSDdevFracPool, vertcat(velocityDiam_summary{x}.lopo.devFrac(:,velocityDiam_summary{x}.rGood), velocityDiam_summary{x}.lofo.devFrac(:,velocityDiam_summary{x}.rGood) )]; % rLocoPreFit{x}, :
     end
 end
 %% Summarize deviance explained
@@ -359,7 +364,7 @@ DevianceFig = figure('WindowState','maximized', 'color','w');
 k = 1; clearvars h;
 subtightplot(1,3,1,opt{:});
 for x = xPresent
-    [Ftemp, Xtemp] = ecdf( locoDiam_summary{x}.dev ); hold on;
+    [Ftemp, Xtemp] = ecdf( velocityDiam_summary{x}.dev ); hold on;
     h(k) = plot(Xtemp, Ftemp, 'color',0.7*[1,1,1] );
     k = k + 1;
 end
@@ -368,7 +373,7 @@ h(k) = plot( Xdev, Fdev, 'color','k', 'LineWidth',2 );
 axis square;
 legend(h, {expt(xPresent).name, 'Pooled', 'Threshold'}, 'Location','southEast', 'Interpreter','none', 'AutoUpdate',false );
 xlim([0, 0.6]);
-line(locoDiam_opts{xPresent(1)}.minDev*[1,1], [0,1], 'Color','r', 'LineStyle','--'); % h(k+1) = 
+line(velocityDiam_opts{xPresent(1)}.minDev*[1,1], [0,1], 'Color','r', 'LineStyle','--'); % h(k+1) = 
 xlabel('Deviance Explained'); ylabel('Fraction of Units');
 title( sprintf('%s Fit Results', GLMname), 'Interpreter','none' );
 
@@ -378,7 +383,7 @@ line([0,size(preCSDdevFracPool,1)+1], [0,0], 'color','k');
 axis square;
 ylabel('Relative Explanatory Value'); %ylabel('Cumulative Distribution');
 ylim([-1,1]);
-set(gca,'Xtick', 1:size(preCSDdevFracPool,1), 'XtickLabel',[locoDiam_pred{xPresent(1)}.name, locoDiam_pred{xPresent(1)}.fam.name]);
+set(gca,'Xtick', 1:size(preCSDdevFracPool,1), 'XtickLabel',[velocityDiam_pred{xPresent(1)}.name, velocityDiam_pred{xPresent(1)}.fam.name]);
 xtickangle(30);
 title('Well-Fit Units');
 
@@ -408,52 +413,52 @@ opt = {[0.02,0.07], [0.1,0.1], [0.1,0.06]};  % {[vert, horz], [bottom, top], [le
 LW = 1.5;
 colororder( subtypeColor ) 
 for x = xPresent
-    tempInsensitiveCoeff = cat(3, locoDiam_result{x}( locoDiam_summary{x}.rIns ).coeff );
+    tempInsensitiveCoeff = cat(3, velocityDiam_result{x}( velocityDiam_summary{x}.rIns ).coeff );
     meanInsensitiveCoeff = mean(tempInsensitiveCoeff, 3, 'omitnan' );
     
-    tempMixedCoeff = cat(3, locoDiam_result{x}( locoDiam_summary{x}.rMixed ).coeff );
+    tempMixedCoeff = cat(3, velocityDiam_result{x}( velocityDiam_summary{x}.rMixed ).coeff );
     meanMixedCoeff = mean(tempMixedCoeff, 3, 'omitnan' );
     
-    tempDeformCoeff = cat(3, locoDiam_result{x}( locoDiam_summary{x}.rDeform ).coeff );
+    tempDeformCoeff = cat(3, velocityDiam_result{x}( velocityDiam_summary{x}.rDeform ).coeff );
     meanDeformCoeff = mean(tempDeformCoeff, 3, 'omitnan' );
     
-    tempLocoCoeff = cat(3, locoDiam_result{x}( locoDiam_summary{x}.rLoco ).coeff );
+    tempLocoCoeff = cat(3, velocityDiam_result{x}( velocityDiam_summary{x}.rLoco ).coeff );
     meanLocoCoeff = mean(tempLocoCoeff, 3, 'omitnan' );
     
     sp(1) = subtightplot(1,4,1,opt{:});
-    if locoDiam_summary{x}.nIns > 0
-        plot(locoDiam_opts{x}.lags,  meanInsCoeff, 'LineWidth',LW );
+    if velocityDiam_summary{x}.nIns > 0
+        plot(velocityDiam_opts{x}.lags,  meanInsCoeff, 'LineWidth',LW );
     end
     axis square;
     tempPos = get(gca,'Position');
     xlabel('Lag (s)'); ylabel('Coefficient'); 
-    title( sprintf('Insensitive (n = %i)', locoDiam_summary{x}.nIns) );
-    legend(locoDiam_pred{x}.name, 'Location','NorthWest', 'AutoUpdate',false)
+    title( sprintf('Insensitive (n = %i)', velocityDiam_summary{x}.nIns) );
+    legend(velocityDiam_pred{x}.name, 'Location','NorthWest', 'AutoUpdate',false)
     set(gca,'Position',tempPos);
     
     sp(2) = subtightplot(1,4,2,opt{:});
-    if locoDiam_summary{x}.nMixed > 0
-        plot(locoDiam_opts{x}.lags,  meanMixedCoeff, 'LineWidth',LW ); 
+    if velocityDiam_summary{x}.nMixed > 0
+        plot(velocityDiam_opts{x}.lags,  meanMixedCoeff, 'LineWidth',LW ); 
     end
     axis square;
-    title( sprintf('Mixed (n = %i)', locoDiam_summary{x}.nMixed) );
+    title( sprintf('Mixed (n = %i)', velocityDiam_summary{x}.nMixed) );
     xlabel('Lag (s)'); 
     
     sp(3) = subtightplot(1,4,3,opt{:});
-    if locoDiam_summary{x}.nDeform > 0
-        plot(locoDiam_opts{x}.lags,  meanDeformCoeff, 'LineWidth',LW ); 
+    if velocityDiam_summary{x}.nDeform > 0
+        plot(velocityDiam_opts{x}.lags,  meanDeformCoeff, 'LineWidth',LW ); 
     end
     axis square;
-    title( sprintf('Deformation-dependent (n = %i)', locoDiam_summary{x}.nDeform) );
+    title( sprintf('Deformation-dependent (n = %i)', velocityDiam_summary{x}.nDeform) );
     xlabel('Lag (s)'); %title('Deformation-dependent'); % ylabel('Coefficient');
     
     sp(4) = subtightplot(1,4,4,opt{:});
-    if locoDiam_summary{x}.nLoco > 0
-        plot(locoDiam_opts{x}.lags,  meanLocoCoeff, 'LineWidth',LW );
+    if velocityDiam_summary{x}.nLoco > 0
+        plot(velocityDiam_opts{x}.lags,  meanLocoCoeff, 'LineWidth',LW );
     end
     axis square;
     xlabel('Lag (s)'); 
-    title(sprintf('Locomotion-dependent (n = %i)', locoDiam_summary{x}.nLoco)); % ylabel('Coefficient'); 
+    title(sprintf('Locomotion-dependent (n = %i)', velocityDiam_summary{x}.nLoco)); % ylabel('Coefficient'); 
     linkaxes(sp,'xy');
     
     pause;
@@ -471,26 +476,26 @@ subtype = {'Insensitive', 'Mixed', 'Deform', 'Loco'};
 Nsubtype = 4;
 pooledCoeff = struct('Insensitive',[], 'Mixed',[], 'Deform',[], 'Loco',[]);
 for x = xPresent
-    pooledCoeff.Insensitive = cat(3, pooledCoeff.Insensitive, locoDiam_result{x}( locoDiam_summary{x}.rIns ).coeff );
-    pooledCoeff.Mixed = cat(3, pooledCoeff.Mixed, locoDiam_result{x}( locoDiam_summary{x}.rMixed).coeff );
-    pooledCoeff.Deform = cat(3, pooledCoeff.Deform, locoDiam_result{x}( locoDiam_summary{x}.rDeform ).coeff );
-    pooledCoeff.Loco = cat(3, pooledCoeff.Loco, locoDiam_result{x}( locoDiam_summary{x}.rLoco ).coeff );
+    pooledCoeff.Insensitive = cat(3, pooledCoeff.Insensitive, velocityDiam_result{x}( velocityDiam_summary{x}.rIns ).coeff );
+    pooledCoeff.Mixed = cat(3, pooledCoeff.Mixed, velocityDiam_result{x}( velocityDiam_summary{x}.rMixed).coeff );
+    pooledCoeff.Deform = cat(3, pooledCoeff.Deform, velocityDiam_result{x}( velocityDiam_summary{x}.rDeform ).coeff );
+    pooledCoeff.Loco = cat(3, pooledCoeff.Loco, velocityDiam_result{x}( velocityDiam_summary{x}.rLoco ).coeff );
     
 end
-pooledLags = locoDiam_opts{xPresent(1)}.lags;
+pooledLags = velocityDiam_opts{xPresent(1)}.lags;
 
-Ncol = locoDiam_pred{xPresent(1)}.N;
+Ncol = velocityDiam_pred{xPresent(1)}.N;
 k = 0;
 close all;
 opt = {[0.03,0.03], [0.07,0.05], [0.05,0.03]};  % {[vert, horz], [bottom, top], [left, right] }
 SubtypeCoeffFig = figure('WindowState','maximized', 'color','w');
 for row = 1:Ntype
-    for col = 1:locoDiam_pred{xPresent(1)}.N
+    for col = 1:velocityDiam_pred{xPresent(1)}.N
         k = k + 1;
         subtightplot(Ntype, Ncol, k, opt{:});
         plot( pooledLags, squeeze(pooledCoeff.(subtype{row})(:,col,:) ), 'color',[0,0,0,0.1] );
         axis square;
-        if row == 1, title( locoDiam_pred{xPresent(1)}.name{col} ); end
+        if row == 1, title( velocityDiam_pred{xPresent(1)}.name{col} ); end
         if col == 1, ylabel( sprintf('%s coeff', subtype{row} )); end
         if row == Nsubtype, xlabel('Lag (s)'); end
     end
@@ -508,15 +513,15 @@ GLMresultFig = figure('WindowState','maximized', 'color','w');
 
 for x = xPresent
     cla;
-    devSummMat{x} = [locoDiam_summary{x}.dev; locoDiam_summary{x}.lopo.dev; locoDiam_summary{x}.lofo.dev];
+    devSummMat{x} = [velocityDiam_summary{x}.dev; velocityDiam_summary{x}.lopo.dev; velocityDiam_summary{x}.lofo.dev];
     %devSummPool = [devSummPool, devSummMat{x}];
     % {
     subtightplot(1,1,1,opt{:});
     imagesc( devSummMat{x} ); %imagesc( devSummPool ); %
     axis image;
-    set(gca, 'Ytick', 1:size(devSummMat{x}, 1), 'YtickLabel', [{'All'}; locoDiam_summary{x}.lopo.name(:); locoDiam_summary{x}.lofo.name(:)], ...
-        'Xtick',1:10:locoDiam_resp{x}.N, 'TickDir','out', 'TickLength',[0.003,0], 'FontSize',8); % 'XtickLabel',locoDiam_resp{x}.name
-    title(sprintf('%s: GLM Fit Summary', locoDiam_opts{x}.name), 'Interpreter','none');
+    set(gca, 'Ytick', 1:size(devSummMat{x}, 1), 'YtickLabel', [{'All'}; velocityDiam_summary{x}.lopo.name(:); velocityDiam_summary{x}.lofo.name(:)], ...
+        'Xtick',1:10:velocityDiam_resp{x}.N, 'TickDir','out', 'TickLength',[0.003,0], 'FontSize',8); % 'XtickLabel',locoDiam_resp{x}.name
+    title(sprintf('%s: GLM Fit Summary', velocityDiam_opts{x}.name), 'Interpreter','none');
     %xtickangle(30);
     
     CB = colorbar; CB.Label.String = 'Deviance Explained';
@@ -530,8 +535,8 @@ devSummMed = median(devSummCat, 2, 'omitnan' );
 
 GLMdevFig = figure('WindowState','maximized', 'color','w');
 imagesc( devSummMed' );
-set(gca,'XtickLabel',  [{'All'}; locoDiam_summary{x}.lopo.name(:); locoDiam_summary{x}.lofo.name(:)], ...
-    'YtickLabel',locoDiam_resp{x}.name, 'TickDir','out', 'TickLength',[0.003,0]);
+set(gca,'XtickLabel',  [{'All'}; velocityDiam_summary{x}.lopo.name(:); velocityDiam_summary{x}.lofo.name(:)], ...
+    'YtickLabel',velocityDiam_resp{x}.name, 'TickDir','out', 'TickLength',[0.003,0]);
 title('GLM Fit Summary (All 3D Data)', 'Interpreter','none');
 xtickangle(30);
 axis image;
@@ -545,17 +550,17 @@ impixelinfo;
 close all; clearvars sp SP;
 PreGLMcoeff = figure('WindowState','maximized', 'color','w');
 opt = {[0.03,0.04], [0.09,0.05], [0.04,0.02]};  % {[vert, horz], [bottom, top], [left, right] }
-for v = 1:locoDiam_pred{x}.N
+for v = 1:velocityDiam_pred{x}.N
     c = 0;
     for x = xPresent %find(~cellfun(@isempty, rLocoPreFit)) %
         c = c+1;
-        if locoDiam_summary{x}.Ngood > 0
-            subtightplot(1, locoDiam_pred{x}.N, v, opt{:});
-            plot(c, locoDiam_summary{x}.peakCoeff(locoDiam_summary{x}.rGood,v), 'k.' ); hold on; %rLocoPreFit{x}
+        if velocityDiam_summary{x}.Ngood > 0
+            subtightplot(1, velocityDiam_pred{x}.N, v, opt{:});
+            plot(c, velocityDiam_summary{x}.peakCoeff(velocityDiam_summary{x}.rGood,v), 'k.' ); hold on; %rLocoPreFit{x}
         end
     end
     line([0,c+1], [0,0], 'color','k');
-    title( locoDiam_pred{x}.name{v}, 'Interpreter','none' );
+    title( velocityDiam_pred{x}.name{v}, 'Interpreter','none' );
     if v == 1, ylabel('Peak Coefficient'); end
     xlim([0,c+1]);
     set(gca, 'Xtick', 1:c, 'XtickLabel', {expt(xPresent).name}, 'TickLabelInterpreter','none' );
@@ -568,16 +573,16 @@ close all; clearvars sp SP;
 PreGLMcoeff = figure('WindowState','maximized', 'color','w');
 opt = {[0.03,0.04], [0.09,0.05], [0.04,0.02]};  % {[vert, horz], [bottom, top], [left, right] }
 exptColor = distinguishable_colors(numel(xPresent));
-for v = 1:locoDiam_pred{x}.N
+for v = 1:velocityDiam_pred{x}.N
     c = 0;
     for x = xPresent %find(~cellfun(@isempty, rLocoPreFit)) %
         c = c+1;
-        if locoDiam_summary{x}.Ngood > 0
-            subtightplot(1, locoDiam_pred{x}.N, v, opt{:});
-            plot(locoDiam_summary{x}.peakLag(locoDiam_summary{x}.rGood,v), locoDiam_summary{x}.peakCoeff(locoDiam_summary{x}.rGood,v), '.', 'color',exptColor(c,:) ); hold on; %rLocoPreFit{x}
+        if velocityDiam_summary{x}.Ngood > 0
+            subtightplot(1, velocityDiam_pred{x}.N, v, opt{:});
+            plot(velocityDiam_summary{x}.peakLag(velocityDiam_summary{x}.rGood,v), velocityDiam_summary{x}.peakCoeff(velocityDiam_summary{x}.rGood,v), '.', 'color',exptColor(c,:) ); hold on; %rLocoPreFit{x}
         end
     end
-    title( locoDiam_pred{xPresent(1)}.name{v}, 'Interpreter','none' );
+    title( velocityDiam_pred{xPresent(1)}.name{v}, 'Interpreter','none' );
     if v == 1, ylabel('Coefficient'); end
     xlabel('Lag (s)');
     xlim([-6,6]);
@@ -586,7 +591,7 @@ end
 
 %% Identify the best-fit units from each experiment
 for x = xPresent
-    [devSort, rDevSort] = sort( [locoDiam_result{x}.dev], 'descend' );
+    [devSort, rDevSort] = sort( [velocityDiam_result{x}.dev], 'descend' );
     %[maxDevExp, rMaxDevExp] = max( [locoDiam_result{x}.dev] );
     WriteROIproj(expt{x}, ROI{x}, 'edges',segParams{x}.edges, 'overwrite',true, 'rSet',rDevSort(1:10), 'buffer',20*[1,1,1,1]); % ROI{x} =   
     %ViewResults3D( expt{x}, Tscan{x}, deform{x}, loco{x}, fluor{x}, allVars, ROI{x}, 'cat',true, 'limits', viewLims ); 
@@ -810,11 +815,11 @@ for x = x3D
     %}
     zROI = vertcat(ROI{x}.cent);
     zROI = zROI(:,3);
-    zIns{x} = zROI(locoDiam_summary{x}.rIns);
-    zMixed = zROI(locoDiam_summary{x}.rMixed);
-    zDeform = zROI(locoDiam_summary{x}.rDeform);
+    zIns{x} = zROI(velocityDiam_summary{x}.rIns);
+    zMixed = zROI(velocityDiam_summary{x}.rMixed);
+    zDeform = zROI(velocityDiam_summary{x}.rDeform);
     zMech{x} = [zMixed;zDeform];
-    zLoco = zROI(locoDiam_summary{x}.rLoco);
+    zLoco = zROI(velocityDiam_summary{x}.rLoco);
 
     %{
     zType = cell2padmat({zROI, zIns{x}, zMech{x}, zDeform, zMixed, zLoco} );
