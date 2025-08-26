@@ -9,14 +9,14 @@ GLM_diamFluor_Matrix = readmatrix(filename, 'Sheet', sheetname);
 
 %% Vessel type
 % Based on observation
-Pia_P_Positive = [49,50]; 
-Pia_P_Negative = [48,86];
-Pia_NP_Positive = [13:16,22:24,26,28,32,85,88:98,115];
-Pia_NP_Negative = [25,27,29:31,51:53,87];
-Dura_P_Positive = [17,33,35,37,38,56:59,61,63,65,66,71:73,75,77:80,82,84,99,108];
-Dura_P_Negative = [34,36,39:41,44,46,47,76,83,100,101,104:107,109:111,113,114]; %1
-Dura_NP_Positive = [2:4,7:10,42,45,54,55,62,67:70,74,81];
-Dura_NP_Negative = [5,6,11,12,18:21,43,60,64,102,103,112];
+% Pia_P_Positive = [49,50]; 
+% Pia_P_Negative = [48,86];
+% Pia_NP_Positive = [13:16,22:24,26,28,32,85,88:98,115];
+% Pia_NP_Negative = [25,27,29:31,51:53,87];
+% Dura_P_Positive = [17,33,35,37,38,56:59,61,63,65,66,71:73,75,77:80,82,84,99,108];
+% Dura_P_Negative = [34,36,39:41,44,46,47,76,83,100,101,104:107,109:111,113,114]; %1
+% Dura_NP_Positive = [2:4,7:10,42,45,54,55,62,67:70,74,81];
+% Dura_NP_Negative = [5,6,11,12,18:21,43,60,64,102,103,112];
 
 % Based on coefficient with locomotion state
 %Pia_P_Positive = [56,57,58,59,61,63,65,66];  
@@ -61,73 +61,112 @@ classifiedData.Dura_P_Negative = GLM_diamFluor_Matrix(:, Dura_P_Negative);
 %classifiedData.Dura_NP_Negative = GLM_diamFluor_Matrix(:, Dura_NP_Negative);
 
 %% DURA PERIVASCULAR POSITIVE
-
-% All
-figure;
-x = (-60:60)';
-
-plot(x, classifiedData.Dura_P_Negative(:,:));
-xlim([-60 60]); % Set x-axis limits
-xlabel('Delay (sec)');
-ylabel('Coefficient value');
-%title(['Plot of Column ', num2str(columns)]);
-grid on;
-
-% Individual positive coefficients
-for columns = 1:size(classifiedData.Dura_P_Negative,2)
-    %column = classifiedData.Dura_P_Positive(:,columns);
-    figure;
-    plot(x, classifiedData.Dura_P_Negative(:,columns));
-    xlim([-60 60]); % Set x-axis limits
-    xlabel('Delay (sec)');
-    ylabel('Coefficient value');
-    title(['Plot of Column ', num2str(columns)]);
-    grid on;
-end
-
-% Individual + Mean
-figure; % Create a new figure
-hold on; % Keep all plots on the same figure
-% Plot each column
-for columns = 1:size(classifiedData.Dura_P_Positive,2)
-    h1 = plot(x, classifiedData.Dura_P_Positive(:, columns), 'Color', [0.7 0.7 0.7]); % Light gray for individual curves
-end
-% Compute the mean across columns
-meanCurve = mean(classifiedData.Dura_P_Positive(:,columns), 2, 'omitnan'); % Excludes NaNs if present
-% Plot the mean curve in a distinct color (e.g., red, thicker line)
-h2 = plot(x, meanCurve, 'r', 'LineWidth', 2);
-% Create legend and store handle
-lgd = legend([h1(1), h2], {'Individual Curves', 'Mean Curve'});
-% Formatting
-xlim([-60 60]);
-xlabel('Delay (sec)');
-ylabel('Coefficient value');
-title('Activated Macrophages');
-% legend({'Individual Curves', 'Mean Curve'});
-hold off; % Release the figure
+% 
+% % All
+% figure;
+% x = (-60:60)';
+% 
+% plot(x, classifiedData.Dura_P_Negative(:,:));
+% xlim([-60 60]); % Set x-axis limits
+% xlabel('Delay (sec)');
+% ylabel('Coefficient value');
+% %title(['Plot of Column ', num2str(columns)]);
+% grid on;
+% 
+% % Individual positive coefficients
+% for columns = 1:size(classifiedData.Dura_P_Negative,2)
+%     %column = classifiedData.Dura_P_Positive(:,columns);
+%     figure;
+%     plot(x, classifiedData.Dura_P_Negative(:,columns));
+%     xlim([-60 60]); % Set x-axis limits
+%     xlabel('Delay (sec)');
+%     ylabel('Coefficient value');
+%     title(['Plot of Column ', num2str(columns)]);
+%     grid on;
+% end
+% 
+% % Individual + Mean
+% figure; % Create a new figure
+% hold on; % Keep all plots on the same figure
+% % Plot each column
+% for columns = 1:size(classifiedData.Dura_P_Positive,2)
+%     h1 = plot(x, classifiedData.Dura_P_Positive(:, columns), 'Color', [0.7 0.7 0.7]); % Light gray for individual curves
+% end
+% % Compute the mean across columns
+% meanCurve = mean(classifiedData.Dura_P_Positive(:,columns), 2, 'omitnan'); % Excludes NaNs if present
+% % Plot the mean curve in a distinct color (e.g., red, thicker line)
+% h2 = plot(x, meanCurve, 'r', 'LineWidth', 2);
+% % Create legend and store handle
+% lgd = legend([h1(1), h2], {'Individual Curves', 'Mean Curve'});
+% % Formatting
+% xlim([-60 60]);
+% xlabel('Delay (sec)');
+% ylabel('Coefficient value');
+% title('Activated Macrophages');
+% % legend({'Individual Curves', 'Mean Curve'});
+% hold off; % Release the figure
 
 %% PAPER
 
 % Create a new figure
-
-blueC8 = [85, 160, 251] / 255; % Normalize to MATLAB's [0,1] scale
+green = [11, 128, 64] / 255; % Normalize to MATLAB's [0,1] scale
+useMedian = true;  % true = Median + IQR, false = Mean + SEM
 
 figure;
 hold on;
 
-% Compute the mean and standard deviation across vessels
-meanCurve = mean(GLM_diamFluor_Matrix(:, Dura_P_Positive), 2, 'omitnan'); % Excludes NaNs if present
-stdCurve = std(GLM_diamFluor_Matrix(:, Dura_P_Positive), 0, 2, 'omitnan'); % Standard deviation
+if useMedian
+    % ----- Median + IQR -----
+    medianCurve = median(GLM_diamFluor_Matrix(:, Dura_P_Positive), 2, 'omitnan');
+    q25 = prctile(GLM_diamFluor_Matrix(:, Dura_P_Positive), 25, 2);
+    q75 = prctile(GLM_diamFluor_Matrix(:, Dura_P_Positive), 75, 2);
 
-% Define upper and lower bounds for shading
-y_upper = meanCurve + stdCurve;
-y_lower = meanCurve - stdCurve;
+    y_lower = q25;
+    y_upper = q75;
 
-% Plot shaded region for individual variation
-fill([x; flipud(x)], [y_upper; flipud(y_lower)], blueC8, 'FaceAlpha', 0.05, 'EdgeColor', 'none');
+    % Plot shaded region for IQR
+    fill([x; flipud(x)], [y_upper; flipud(y_lower)], green, ...
+        'FaceAlpha', 0.05, 'EdgeColor', 'none');
+    % Plot the median curve
+    plot(x, medianCurve, 'k', 'LineWidth', 1);
 
-% Plot the mean curve in a distinct color (e.g., red, thicker line)
-h2 = plot(x, meanCurve, 'k', 'LineWidth', 1);
+else
+    % ----- Mean + SEM -----
+    meanCurve = mean(GLM_diamFluor_Matrix(:, Dura_P_Positive), 2, 'omitnan');
+    stdCurve  = std(GLM_diamFluor_Matrix(:, Dura_P_Positive), 0, 2, 'omitnan');
+    nVessels  = sum(~isnan(GLM_diamFluor_Matrix(:, Dura_P_Positive)), 2);
+    semCurve  = stdCurve ./ sqrt(nVessels);
+
+    y_upper = meanCurve + semCurve;
+    y_lower = meanCurve - semCurve;
+
+    % Plot shaded region for SEM
+    fill([x; flipud(x)], [y_upper; flipud(y_lower)], green, ...
+        'FaceAlpha', 0.05, 'EdgeColor', 'none');
+    % Plot the mean curve
+    plot(x, meanCurve, 'k', 'LineWidth', 1);
+end
+% 
+% blueC8 = [85, 160, 251] / 255; % Normalize to MATLAB's [0,1] scale
+% 
+% figure;
+% hold on;
+% 
+% % Compute the mean and standard deviation across vessels
+% meanCurve = mean(GLM_diamFluor_Matrix(:, Dura_P_Positive), 2, 'omitnan'); % Excludes NaNs if present
+% stdCurve = std(GLM_diamFluor_Matrix(:, Dura_P_Positive), 0, 2, 'omitnan'); % Standard deviation
+% nVessels = sum(~isnan(GLM_diamFluor_Matrix(:, Dura_P_Positive)), 2); % Counts non-NaN vessels at each time point
+% semCurve = stdCurve ./ sqrt(nVessels); % Standard error of the mean
+% 
+% % Define upper and lower bounds for shading
+% y_upper = meanCurve + semCurve;
+% y_lower = meanCurve - semCurve;
+% 
+% % Plot shaded region for individual variation
+% fill([x; flipud(x)], [y_upper; flipud(y_lower)], blueC8, 'FaceAlpha', 0.05, 'EdgeColor', 'none');
+% 
+% % Plot the mean curve in a distinct color (e.g., red, thicker line)
+% h2 = plot(x, meanCurve, 'k', 'LineWidth', 1);
 
 % Formatting
 xlim([-60 60]);
@@ -147,73 +186,112 @@ set(gca, 'TickDir', 'out'); % Make tick marks point outward
 
 hold off;
 
-
 %% DURA PERIVASCULAR NEGATIVE
-
-% All
-figure;
-x = (-60:60)';
-plot(x, classifiedData.Dura_P_Negative(:,:));
-xlim([-60 60]); % Set x-axis limits
-xlabel('Delay (sec)');
-ylabel('Coefficient value');
-%title(['Plot of Column ', num2str(columns)]);
-grid on;
-
-% Individual positive coefficients
-for columns = 1:size(classifiedData.Dura_P_Negative,2)
-    figure;
-    plot(x, classifiedData.Dura_P_Negative(:,columns));
-    xlim([-60 60]); % Set x-axis limits
-    xlabel('Delay (sec)');
-    ylabel('Coefficient value');
-    title(['Plot of Column ', num2str(columns)]);
-    grid on;
-end
-
-% Individual + Mean
-figure; % Create a new figure
-hold on; % Keep all plots on the same figure
-% Plot each column
-for columns = 1:size(classifiedData.Dura_P_Negative,2)
-    h1 = plot(x, classifiedData.Dura_P_Negative(:, columns), 'Color', [0.7 0.7 0.7]); % Light gray for individual curves
-end
-% Compute the mean across columns
-meanCurve = mean(classifiedData.Dura_P_Negative(:,columns), 2, 'omitnan'); % Excludes NaNs if present
-% Plot the mean curve in a distinct color (e.g., red, thicker line)
-h2 = plot(x, meanCurve, 'r', 'LineWidth', 2);
-% Create legend and store handle
-lgd = legend([h1(1), h2], {'Individual Curves', 'Mean Curve'});
-% Formatting
-xlim([-60 60]);
-xlabel('Delay (sec)');
-ylabel('Coefficient value');
-title('Activated Macrophages');
-% legend({'Individual Curves', 'Mean Curve'});
-hold off; % Release the figure
+% 
+% % All
+% figure;
+% x = (-60:60)';
+% plot(x, classifiedData.Dura_P_Negative(:,:));
+% xlim([-60 60]); % Set x-axis limits
+% xlabel('Delay (sec)');
+% ylabel('Coefficient value');
+% %title(['Plot of Column ', num2str(columns)]);
+% grid on;
+% 
+% % Individual positive coefficients
+% for columns = 1:size(classifiedData.Dura_P_Negative,2)
+%     figure;
+%     plot(x, classifiedData.Dura_P_Negative(:,columns));
+%     xlim([-60 60]); % Set x-axis limits
+%     xlabel('Delay (sec)');
+%     ylabel('Coefficient value');
+%     title(['Plot of Column ', num2str(columns)]);
+%     grid on;
+% end
+% 
+% % Individual + Mean
+% figure; % Create a new figure
+% hold on; % Keep all plots on the same figure
+% % Plot each column
+% for columns = 1:size(classifiedData.Dura_P_Negative,2)
+%     h1 = plot(x, classifiedData.Dura_P_Negative(:, columns), 'Color', [0.7 0.7 0.7]); % Light gray for individual curves
+% end
+% % Compute the mean across columns
+% meanCurve = mean(classifiedData.Dura_P_Negative(:,columns), 2, 'omitnan'); % Excludes NaNs if present
+% % Plot the mean curve in a distinct color (e.g., red, thicker line)
+% h2 = plot(x, meanCurve, 'r', 'LineWidth', 2);
+% % Create legend and store handle
+% lgd = legend([h1(1), h2], {'Individual Curves', 'Mean Curve'});
+% % Formatting
+% xlim([-60 60]);
+% xlabel('Delay (sec)');
+% ylabel('Coefficient value');
+% title('Activated Macrophages');
+% % legend({'Individual Curves', 'Mean Curve'});
+% hold off; % Release the figure
 
 %% PAPER
 
 % Create a new figure
 
-pinkC3 = [255, 128, 128] / 255; % Normalize to MATLAB's [0,1] scale
+purple = [125, 40, 125] / 255; % Normalize to MATLAB's [0,1] scale
+useMedian = true;  % true = Median + IQR, false = Mean + SEM
 
 figure;
 hold on;
 
-% Compute the mean and standard deviation across vessels
-meanCurve = mean(GLM_diamFluor_Matrix(:, Dura_P_Negative), 2, 'omitnan'); % Excludes NaNs if present
-stdCurve = std(GLM_diamFluor_Matrix(:, Dura_P_Negative), 0, 2, 'omitnan'); % Standard deviation
+if useMedian
+    % ----- Median + IQR -----
+    medianCurve = median(GLM_diamFluor_Matrix(:, Dura_P_Negative), 2, 'omitnan');
+    q25 = prctile(GLM_diamFluor_Matrix(:, Dura_P_Negative), 25, 2);
+    q75 = prctile(GLM_diamFluor_Matrix(:, Dura_P_Negative), 75, 2);
 
-% Define upper and lower bounds for shading
-y_upper = meanCurve + stdCurve;
-y_lower = meanCurve - stdCurve;
+    y_lower = q25;
+    y_upper = q75;
 
-% Plot shaded region for individual variation
-fill([x; flipud(x)], [y_upper; flipud(y_lower)], pinkC3, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    % Plot shaded region for IQR
+    fill([x; flipud(x)], [y_upper; flipud(y_lower)], purple, ...
+        'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    % Plot the median curve
+    plot(x, medianCurve, 'k', 'LineWidth', 1);
 
-% Plot the mean curve in a distinct color (e.g., red, thicker line)
-h2 = plot(x, meanCurve, 'k', 'LineWidth', 1);
+else
+    % ----- Mean + SEM -----
+    meanCurve = mean(GLM_diamFluor_Matrix(:, Dura_P_Negative), 2, 'omitnan');
+    stdCurve  = std(GLM_diamFluor_Matrix(:, Dura_P_Negative), 0, 2, 'omitnan');
+    nVessels  = sum(~isnan(GLM_diamFluor_Matrix(:, Dura_P_Negative)), 2);
+    semCurve  = stdCurve ./ sqrt(nVessels);
+
+    y_upper = meanCurve + semCurve;
+    y_lower = meanCurve - semCurve;
+
+    % Plot shaded region for SEM
+    fill([x; flipud(x)], [y_upper; flipud(y_lower)], pinkC3, ...
+        'FaceAlpha', 0.3, 'EdgeColor', 'none');
+    % Plot the mean curve
+    plot(x, meanCurve, 'k', 'LineWidth', 1);
+end
+% 
+% pinkC3 = [255, 128, 128] / 255; % Normalize to MATLAB's [0,1] scale
+% 
+% figure;
+% hold on;
+% 
+% % Compute the mean and standard deviation across vessels
+% meanCurve = mean(GLM_diamFluor_Matrix(:, Dura_P_Negative), 2, 'omitnan'); % Excludes NaNs if present
+% stdCurve = std(GLM_diamFluor_Matrix(:, Dura_P_Negative), 0, 2, 'omitnan'); % Standard deviation
+% nVessels = sum(~isnan(GLM_diamFluor_Matrix(:, Dura_P_Negative)), 2); % Counts non-NaN vessels at each time point
+% semCurve = stdCurve ./ sqrt(nVessels); % Standard error of the mean
+% 
+% % Define upper and lower bounds for shading
+% y_upper = meanCurve + semCurve;
+% y_lower = meanCurve - semCurve;
+% 
+% % Plot shaded region for individual variation
+% fill([x; flipud(x)], [y_upper; flipud(y_lower)], pinkC3, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+% 
+% % Plot the mean curve in a distinct color (e.g., red, thicker line)
+% h2 = plot(x, meanCurve, 'k', 'LineWidth', 1);
 
 % Formatting
 xlim([-60 60]);

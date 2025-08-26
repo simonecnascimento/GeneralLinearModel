@@ -19,7 +19,7 @@ end
 locoDiamDir = 'D:\2photon\Simone\Simone_Macrophages\GLMs\locoDiam';
 cd(locoDiamDir);
 FOV = extractBefore(diamFluorExpt, '_run1_reg_Z01_green_Substack(1-927)_GLM_diamFluor_baseline');
-locoDiamExpt = strcat(FOV, '_GLM_locoDiam_baseline_results');
+locoDiamExpt = strcat(FOV, '_GLM_locoDiam_baseline_results_good');
 locoDiamData = load(locoDiamExpt);
 
 %plot
