@@ -1,4 +1,4 @@
-%% Use GLM to assess contribution of different variables
+% Use GLM to assess contribution of different variables
 
 % Clear any previous variables in the Workspace and Command Window to start fresh
 clear; clc; close all;
